@@ -1,0 +1,31 @@
+# Copyright (c) Jonathan Shook
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name                 = "paramodel-mock"
+description          = "In-memory reference implementations of every paramodel runtime and persistence trait. Used by paramodel-tck as default fixtures and by adopters as compact standalone backing for tests and examples."
+version.workspace    = true
+edition.workspace    = true
+license.workspace    = true
+repository.workspace = true
+authors.workspace    = true
+publish.workspace    = true
+
+[dependencies]
+paramodel-elements    = { path = "../paramodel-elements" }
+paramodel-plan        = { path = "../paramodel-plan" }
+paramodel-trials      = { path = "../paramodel-trials" }
+paramodel-executor    = { path = "../paramodel-executor" }
+paramodel-persistence = { path = "../paramodel-persistence" }
+async-trait.workspace = true
+futures.workspace     = true
+jiff.workspace        = true
+serde.workspace       = true
+tokio                 = { workspace = true, features = ["macros", "rt", "sync"] }
+ulid.workspace        = true
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true

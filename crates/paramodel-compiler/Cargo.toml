@@ -1,0 +1,27 @@
+# Copyright (c) Jonathan Shook
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name                 = "paramodel-compiler"
+description          = "Paramodel compiler: turns a TestPlan into an ExecutionPlan via the four-stage reducto-derived pipeline. v0.1 scope covers the trivial case; advanced reductions are follow-up slices."
+version.workspace    = true
+edition.workspace    = true
+license.workspace    = true
+repository.workspace = true
+authors.workspace    = true
+publish.workspace    = true
+
+[dependencies]
+paramodel-elements  = { path = "../paramodel-elements" }
+paramodel-plan      = { path = "../paramodel-plan" }
+paramodel-trials    = { path = "../paramodel-trials" }
+jiff.workspace      = true
+serde.workspace     = true
+thiserror.workspace = true
+ulid.workspace      = true
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true

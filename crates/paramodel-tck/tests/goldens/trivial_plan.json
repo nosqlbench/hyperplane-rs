@@ -1,0 +1,39 @@
+{
+  "steps": [
+    {
+      "id": "activate_db_t0",
+      "kind": "deploy",
+      "depends_on": [
+        "start"
+      ],
+      "element": "db",
+      "trial_index": 0
+    },
+    {
+      "id": "deactivate_db_t0",
+      "kind": "teardown",
+      "depends_on": [
+        "activate_db_t0"
+      ],
+      "element": "db",
+      "trial_index": 0
+    },
+    {
+      "id": "end",
+      "kind": "checkpoint",
+      "depends_on": [
+        "deactivate_db_t0"
+      ],
+      "element": null,
+      "trial_index": null
+    },
+    {
+      "id": "start",
+      "kind": "checkpoint",
+      "depends_on": [],
+      "element": null,
+      "trial_index": null
+    }
+  ],
+  "step_count": 4
+}

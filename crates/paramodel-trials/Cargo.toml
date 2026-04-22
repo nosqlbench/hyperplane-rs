@@ -1,0 +1,26 @@
+# Copyright (c) Jonathan Shook
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name                 = "paramodel-trials"
+description          = "Paramodel trial-set and trial-result layer: TrialSet, SamplingStrategy, TrialStatus, TrialResult, Metrics, ArtifactRef, TrialProvenance."
+version.workspace    = true
+edition.workspace    = true
+license.workspace    = true
+repository.workspace = true
+authors.workspace    = true
+publish.workspace    = true
+
+[dependencies]
+paramodel-elements   = { path = "../paramodel-elements" }
+bon.workspace        = true
+jiff.workspace       = true
+serde.workspace      = true
+thiserror.workspace  = true
+ulid.workspace       = true
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true

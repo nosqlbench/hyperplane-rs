@@ -1,0 +1,7 @@
+# Copyright (c) Jonathan Shook
+# SPDX-License-Identifier: Apache-2.0
+
+[toolchain]
+channel    = "nightly"
+components = ["rustfmt", "clippy", "rust-src"]
+profile    = "default"

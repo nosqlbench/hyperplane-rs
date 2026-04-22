@@ -1,0 +1,37 @@
+# Copyright (c) Jonathan Shook
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name                 = "paramodel-tck"
+description          = "Technology Compatibility Kit (TCK) for paramodel. Exposes conformance tests + the ImplementationProvider family; downstream crates call into the TCK to verify their own paramodel-trait implementations."
+version.workspace    = true
+edition.workspace    = true
+license.workspace    = true
+repository.workspace = true
+authors.workspace    = true
+publish.workspace    = true
+
+[dependencies]
+paramodel-elements    = { path = "../paramodel-elements" }
+paramodel-plan        = { path = "../paramodel-plan" }
+paramodel-trials      = { path = "../paramodel-trials" }
+paramodel-compiler    = { path = "../paramodel-compiler" }
+# Workspace-re-exported for proptest strategies and algebraic-law
+# coverage defined inside this crate.
+paramodel-executor    = { path = "../paramodel-executor" }
+paramodel-persistence = { path = "../paramodel-persistence" }
+paramodel-mock        = { path = "../paramodel-mock" }
+async-trait.workspace = true
+futures.workspace     = true
+jiff.workspace        = true
+serde.workspace       = true
+serde_json.workspace  = true
+tokio                 = { workspace = true, features = ["macros", "rt"] }
+ulid.workspace        = true
+
+[dev-dependencies]
+indexmap.workspace   = true
+proptest.workspace   = true
+
+[lints]
+workspace = true

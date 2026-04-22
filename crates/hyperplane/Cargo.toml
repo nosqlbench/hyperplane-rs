@@ -1,0 +1,18 @@
+# Copyright (c) Jonathan Shook
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name                 = "hyperplane"
+description          = "Hyperplane — a parameter-model-driven testing and orchestration system built on top of paramodel. hyperplane-specific sub-crates re-export through here as they land."
+version.workspace    = true
+edition.workspace    = true
+license.workspace    = true
+repository.workspace = true
+authors.workspace    = true
+publish              = true
+
+[dependencies]
+paramodel = { path = "../paramodel", version = "0.1.0" }
+
+[lints]
+workspace = true

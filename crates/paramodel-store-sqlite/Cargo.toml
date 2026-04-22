@@ -1,0 +1,18 @@
+# Copyright (c) Jonathan Shook
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name                 = "paramodel-store-sqlite"
+description          = "Paramodel persistence — SQLite backend. Reserves the crate namespace; full schema + trait implementations land in follow-up slices."
+version.workspace    = true
+edition.workspace    = true
+license.workspace    = true
+repository.workspace = true
+authors.workspace    = true
+publish              = true
+
+[dependencies]
+paramodel-persistence = { path = "../paramodel-persistence", version = "0.1.0" }
+
+[lints]
+workspace = true

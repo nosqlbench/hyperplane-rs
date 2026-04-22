@@ -1,0 +1,22 @@
+# Copyright (c) Jonathan Shook
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name                 = "paramodel"
+description          = "Paramodel — parameter-modelling, trial enumeration, plan compilation, and plan execution. This crate re-exports every paramodel sub-crate as a module (`paramodel::elements`, `paramodel::plan`, `paramodel::trials`, `paramodel::compiler`, `paramodel::executor`)."
+version.workspace    = true
+edition.workspace    = true
+license.workspace    = true
+repository.workspace = true
+authors.workspace    = true
+publish              = true
+
+[dependencies]
+paramodel-elements = { path = "../paramodel-elements", version = "0.1.0" }
+paramodel-plan     = { path = "../paramodel-plan",     version = "0.1.0" }
+paramodel-trials   = { path = "../paramodel-trials",   version = "0.1.0" }
+paramodel-compiler = { path = "../paramodel-compiler", version = "0.1.0" }
+paramodel-executor = { path = "../paramodel-executor", version = "0.1.0" }
+
+[lints]
+workspace = true
