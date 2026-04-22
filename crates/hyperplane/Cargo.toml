@@ -12,7 +12,7 @@ authors.workspace    = true
 publish              = true
 
 [dependencies]
-paramodel = { path = "../paramodel", version = "0.1.0" }
+paramodel = { path = "../paramodel", version = "0.2.0" }
 
 [lints]
 workspace = true
