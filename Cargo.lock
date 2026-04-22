@@ -370,7 +370,7 @@ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
 name = "hyperplane"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "paramodel",
 ]
@@ -511,7 +511,7 @@ checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 
 [[package]]
 name = "paramodel"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "paramodel-compiler",
  "paramodel-elements",
@@ -522,7 +522,7 @@ dependencies = [
 
 [[package]]
 name = "paramodel-compiler"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "jiff",
  "paramodel-elements",
@@ -536,7 +536,7 @@ dependencies = [
 
 [[package]]
 name = "paramodel-elements"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "blake3",
@@ -555,7 +555,7 @@ dependencies = [
 
 [[package]]
 name = "paramodel-executor"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "jiff",
@@ -572,7 +572,7 @@ dependencies = [
 
 [[package]]
 name = "paramodel-mock"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "futures",
@@ -590,7 +590,7 @@ dependencies = [
 
 [[package]]
 name = "paramodel-persistence"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "futures",
@@ -608,7 +608,7 @@ dependencies = [
 
 [[package]]
 name = "paramodel-plan"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "jiff",
@@ -621,14 +621,14 @@ dependencies = [
 
 [[package]]
 name = "paramodel-store-sqlite"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "paramodel-persistence",
 ]
 
 [[package]]
 name = "paramodel-tck"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "futures",
@@ -650,7 +650,7 @@ dependencies = [
 
 [[package]]
 name = "paramodel-trials"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bon",
  "jiff",

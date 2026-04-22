@@ -12,11 +12,11 @@ authors.workspace    = true
 publish              = true
 
 [dependencies]
-paramodel-elements = { path = "../paramodel-elements", version = "0.2.0" }
-paramodel-plan     = { path = "../paramodel-plan",     version = "0.2.0" }
-paramodel-trials   = { path = "../paramodel-trials",   version = "0.2.0" }
-paramodel-compiler = { path = "../paramodel-compiler", version = "0.2.0" }
-paramodel-executor = { path = "../paramodel-executor", version = "0.2.0" }
+paramodel-elements.workspace = true
+paramodel-plan.workspace     = true
+paramodel-trials.workspace   = true
+paramodel-compiler.workspace = true
+paramodel-executor.workspace = true
 
 [lints]
 workspace = true

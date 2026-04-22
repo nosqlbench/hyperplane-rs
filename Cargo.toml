@@ -15,6 +15,19 @@ publish    = true
 
 [workspace.dependencies]
 # Shared across crates. Per-crate Cargo.toml writes `foo.workspace = true`.
+
+# Inter-crate paramodel deps. Centralised here so a workspace version bump
+# only changes this file; each crate spec uses `.workspace = true`.
+paramodel             = { path = "crates/paramodel",             version = "0.2.0" }
+paramodel-elements    = { path = "crates/paramodel-elements",    version = "0.2.0" }
+paramodel-plan        = { path = "crates/paramodel-plan",        version = "0.2.0" }
+paramodel-trials      = { path = "crates/paramodel-trials",      version = "0.2.0" }
+paramodel-compiler    = { path = "crates/paramodel-compiler",    version = "0.2.0" }
+paramodel-executor    = { path = "crates/paramodel-executor",    version = "0.2.0" }
+paramodel-persistence = { path = "crates/paramodel-persistence", version = "0.2.0" }
+paramodel-mock        = { path = "crates/paramodel-mock",        version = "0.2.0" }
+paramodel-tck         = { path = "crates/paramodel-tck",         version = "0.2.0" }
+
 anyhow             = "1"
 async-trait        = "0.1"
 blake3             = "1"
