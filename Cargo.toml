@@ -11,7 +11,7 @@ edition    = "2024"
 license    = "Apache-2.0"
 repository = "https://github.com/jshook/hyperplane-rs"
 authors    = ["Jonathan Shook"]
-publish    = false
+publish    = true
 
 [workspace.dependencies]
 # Shared across crates. Per-crate Cargo.toml writes `foo.workspace = true`.

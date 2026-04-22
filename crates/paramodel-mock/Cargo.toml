@@ -12,11 +12,11 @@ authors.workspace    = true
 publish.workspace    = true
 
 [dependencies]
-paramodel-elements    = { path = "../paramodel-elements" }
-paramodel-plan        = { path = "../paramodel-plan" }
-paramodel-trials      = { path = "../paramodel-trials" }
-paramodel-executor    = { path = "../paramodel-executor" }
-paramodel-persistence = { path = "../paramodel-persistence" }
+paramodel-elements    = { path = "../paramodel-elements", version = "0.1.0" }
+paramodel-plan        = { path = "../paramodel-plan", version = "0.1.0" }
+paramodel-trials      = { path = "../paramodel-trials", version = "0.1.0" }
+paramodel-executor    = { path = "../paramodel-executor", version = "0.1.0" }
+paramodel-persistence = { path = "../paramodel-persistence", version = "0.1.0" }
 async-trait.workspace = true
 futures.workspace     = true
 jiff.workspace        = true

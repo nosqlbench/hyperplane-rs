@@ -12,7 +12,7 @@ authors.workspace    = true
 publish.workspace    = true
 
 [dependencies]
-paramodel-elements   = { path = "../paramodel-elements" }
+paramodel-elements   = { path = "../paramodel-elements", version = "0.1.0" }
 bon.workspace        = true
 jiff.workspace       = true
 serde.workspace      = true

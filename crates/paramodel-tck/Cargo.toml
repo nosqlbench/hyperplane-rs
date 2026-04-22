@@ -12,15 +12,15 @@ authors.workspace    = true
 publish.workspace    = true
 
 [dependencies]
-paramodel-elements    = { path = "../paramodel-elements" }
-paramodel-plan        = { path = "../paramodel-plan" }
-paramodel-trials      = { path = "../paramodel-trials" }
-paramodel-compiler    = { path = "../paramodel-compiler" }
+paramodel-elements    = { path = "../paramodel-elements", version = "0.1.0" }
+paramodel-plan        = { path = "../paramodel-plan", version = "0.1.0" }
+paramodel-trials      = { path = "../paramodel-trials", version = "0.1.0" }
+paramodel-compiler    = { path = "../paramodel-compiler", version = "0.1.0" }
 # Workspace-re-exported for proptest strategies and algebraic-law
 # coverage defined inside this crate.
-paramodel-executor    = { path = "../paramodel-executor" }
-paramodel-persistence = { path = "../paramodel-persistence" }
-paramodel-mock        = { path = "../paramodel-mock" }
+paramodel-executor    = { path = "../paramodel-executor", version = "0.1.0" }
+paramodel-persistence = { path = "../paramodel-persistence", version = "0.1.0" }
+paramodel-mock        = { path = "../paramodel-mock", version = "0.1.0" }
 async-trait.workspace = true
 futures.workspace     = true
 jiff.workspace        = true
