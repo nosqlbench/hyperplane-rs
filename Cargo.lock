@@ -558,6 +558,7 @@ name = "paramodel-executor"
 version = "0.2.0"
 dependencies = [
  "async-trait",
+ "futures",
  "jiff",
  "paramodel-compiler",
  "paramodel-elements",

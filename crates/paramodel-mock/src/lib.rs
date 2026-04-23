@@ -61,8 +61,8 @@ pub type MockResourceManager = paramodel_executor::DefaultResourceManager;
 /// Alias for [`paramodel_executor::InMemoryArtifactCollector`].
 pub type MockArtifactCollector = paramodel_executor::InMemoryArtifactCollector;
 
-/// Alias for [`paramodel_executor::NoopStateManager`].
-pub type MockStateManager = paramodel_executor::NoopStateManager;
+/// Alias for [`paramodel_executor::InMemoryStateManager`].
+pub type MockStateManager = paramodel_executor::InMemoryStateManager;
 
 /// Alias for [`paramodel_executor::InMemoryJournalWriter`].
 pub type MockJournalWriter = paramodel_executor::InMemoryJournalWriter;

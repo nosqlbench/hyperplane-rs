@@ -67,5 +67,5 @@ pub use scheduler::{
 };
 pub use state::{
     Checkpoint, CheckpointHandle, CheckpointState, ExecutionStateManager, IdempotencyClass,
-    InFlightResolution, NoopStateManager, RecoveryResult,
+    InFlightResolution, InMemoryStateManager, NoopStateManager, RecoveryResult,
 };

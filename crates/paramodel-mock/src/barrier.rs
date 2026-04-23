@@ -129,10 +129,17 @@ impl BarrierHandle for MockBarrierHandle {
     ) -> Result<bool, BarrierError> {
         match timeout(budget, self.await_satisfied()).await {
             Ok(Ok(())) => Ok(true),
+            // A handle that's already in `TimedOut` (e.g. a sibling
+            // waiter's budget already expired and set the sticky
+            // state) is a "didn't make it" outcome, not an error.
+            // Map to `Ok(false)` so every `await_with_timeout` caller
+            // sees the same shape regardless of who tripped the
+            // timeout.
+            Ok(Err(BarrierError::TimedOut { .. })) => Ok(false),
             Ok(Err(e)) => Err(e),
             Err(_) => {
-                // Mark TimedOut but don't fail — callers distinguish
-                // via the `bool` return.
+                // This caller's own budget expired. Mark TimedOut so
+                // later callers short-circuit cheaply.
                 let mut inner = self.state.lock().expect("poisoned");
                 if matches!(inner.state, BarrierState::Pending) {
                     inner.state = BarrierState::TimedOut;

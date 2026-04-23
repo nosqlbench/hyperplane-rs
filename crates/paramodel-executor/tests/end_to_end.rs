@@ -116,9 +116,10 @@ async fn trivial_plan_executes_end_to_end() {
     assert_eq!(runtime.dematerialize_calls.load(Ordering::SeqCst), 1);
 
     let events = journal.snapshot();
-    // ExecutionStarted + (StepStarted + StepCompleted) * 4 + ExecutionCompleted
-    // = 1 + 8 + 1 = 10
-    assert_eq!(events.len(), 10);
+    // ExecutionStarted + (StepStarted + StepCompleted) * 4 +
+    // CheckpointCreated * 2 (one per compiler-emitted Checkpoint
+    // step) + ExecutionCompleted = 1 + 8 + 2 + 1 = 12.
+    assert_eq!(events.len(), 12);
 
     let has_started = events
         .iter()

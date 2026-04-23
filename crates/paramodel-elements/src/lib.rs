@@ -51,7 +51,9 @@ pub use attributes::{
     Pluggable, PortName, Socket, TagKey, TagValue, Tags, Tier, Wire, WireMatch, fits,
     validate_namespace, wiring_for,
 };
-pub use configuration::{ConfigEntry, Configuration, ExportName, Exports, TokenExpr};
+pub use configuration::{
+    ConfigEntry, Configuration, ExportName, Exports, TokenExpr, TokenResolver,
+};
 pub use constraint::{
     BoolConstraint, Constraint, DoubleConstraint, IntConstraint, SelectionConstraint,
     StringConstraint,

@@ -20,7 +20,7 @@ use paramodel_elements::{
     ElementName, ElementRuntime, HealthCheckSpec, LiveStatusSummary, MaterializationOutputs,
     ParameterName, Trial, Value,
 };
-use paramodel_plan::{AtomicStep, ExecutionPlan, InstanceId, ShutdownReason};
+use paramodel_plan::{AtomicStep, ExecutionPlan, InstanceId, OutputSelector, ShutdownReason};
 use paramodel_trials::{ArtifactRef, ErrorInfo};
 use serde::{Deserialize, Serialize};
 
@@ -109,6 +109,9 @@ pub trait Orchestrator: Send + Sync + 'static {
 /// Reference orchestrator backed by a pre-resolved runtime map.
 pub struct DefaultOrchestrator {
     runtimes: Mutex<BTreeMap<ElementName, Arc<dyn ElementRuntime>>>,
+    /// Materialization outputs captured at `Deploy` time, keyed by
+    /// `(element, instance_number)`. Consulted by `SaveOutput`.
+    outputs:  Mutex<BTreeMap<(ElementName, u32), MaterializationOutputs>>,
 }
 
 impl std::fmt::Debug for DefaultOrchestrator {
@@ -126,6 +129,7 @@ impl DefaultOrchestrator {
     pub fn new(runtimes: BTreeMap<ElementName, Arc<dyn ElementRuntime>>) -> Self {
         Self {
             runtimes: Mutex::new(runtimes),
+            outputs:  Mutex::new(BTreeMap::new()),
         }
     }
 
@@ -134,6 +138,7 @@ impl DefaultOrchestrator {
     pub fn empty() -> Self {
         Self {
             runtimes: Mutex::new(BTreeMap::new()),
+            outputs:  Mutex::new(BTreeMap::new()),
         }
     }
 
@@ -164,33 +169,52 @@ impl Orchestrator for DefaultOrchestrator {
         step:  &AtomicStep,
     ) -> Result<StepOutcome, OrchestratorError> {
         match step {
-            AtomicStep::Deploy { element, configuration, .. } => {
+            AtomicStep::Deploy {
+                element, configuration, instance_number, ..
+            } => {
                 let rt = self.runtime_for(element)?;
-                let outputs = rt.materialize(configuration).await.map_err(|err| {
-                    OrchestratorError::UnsupportedStep {
-                        step:   step.id().as_str().to_owned(),
-                        reason: format!("materialize failed: {err}"),
+                match rt.materialize(configuration).await {
+                    Ok(outputs) => {
+                        // Stash outputs for later `SaveOutput` lookups.
+                        self.outputs
+                            .lock()
+                            .expect("poisoned")
+                            .insert((element.clone(), *instance_number), outputs.clone());
+                        Ok(StepOutcome::Completed {
+                            duration:                Duration::ZERO,
+                            materialization_outputs: outputs,
+                            metrics:                 BTreeMap::new(),
+                            artifacts:               Vec::new(),
+                        })
                     }
-                })?;
-                Ok(StepOutcome::Completed {
-                    duration:                Duration::ZERO,
-                    materialization_outputs: outputs,
-                    metrics:                 BTreeMap::new(),
-                    artifacts:               Vec::new(),
-                })
+                    // A runtime-level failure is a step-level failure,
+                    // not an infrastructure error. Surface it as
+                    // `StepOutcome::Failed` so the executor can honour
+                    // the plan's `on_failure` policy.
+                    Err(err) => Ok(StepOutcome::Failed {
+                        error: ErrorInfo::builder()
+                            .kind("MaterializeFailed".to_owned())
+                            .message(format!("{err}"))
+                            .build(),
+                    }),
+                }
             }
             AtomicStep::Teardown { element, .. } => {
                 let rt = self.runtime_for(element)?;
-                rt.dematerialize().await.map_err(|err| OrchestratorError::UnsupportedStep {
-                    step:   step.id().as_str().to_owned(),
-                    reason: format!("dematerialize failed: {err}"),
-                })?;
-                Ok(StepOutcome::Completed {
-                    duration:                Duration::ZERO,
-                    materialization_outputs: MaterializationOutputs::new(),
-                    metrics:                 BTreeMap::new(),
-                    artifacts:               Vec::new(),
-                })
+                match rt.dematerialize().await {
+                    Ok(()) => Ok(StepOutcome::Completed {
+                        duration:                Duration::ZERO,
+                        materialization_outputs: MaterializationOutputs::new(),
+                        metrics:                 BTreeMap::new(),
+                        artifacts:               Vec::new(),
+                    }),
+                    Err(err) => Ok(StepOutcome::Failed {
+                        error: ErrorInfo::builder()
+                            .kind("DematerializeFailed".to_owned())
+                            .message(format!("{err}"))
+                            .build(),
+                    }),
+                }
             }
             AtomicStep::Checkpoint { .. } | AtomicStep::Barrier { .. } => Ok(
                 StepOutcome::Completed {
@@ -200,11 +224,127 @@ impl Orchestrator for DefaultOrchestrator {
                     artifacts:               Vec::new(),
                 },
             ),
-            other => Err(OrchestratorError::UnsupportedStep {
-                step:   other.id().as_str().to_owned(),
-                reason: "v0.1 orchestrator handles Deploy, Teardown, Checkpoint, Barrier only"
-                    .to_owned(),
-            }),
+            // Trial-lifecycle steps are no-op successes at the
+            // orchestrator layer. The executor is responsible for
+            // aggregating them into `ExecutionResults.trial_results`
+            // — see `DefaultExecutor::execute`.
+            AtomicStep::TrialStart { .. } | AtomicStep::TrialEnd { .. } => {
+                Ok(StepOutcome::Completed {
+                    duration:                Duration::ZERO,
+                    materialization_outputs: MaterializationOutputs::new(),
+                    metrics:                 BTreeMap::new(),
+                    artifacts:               Vec::new(),
+                })
+            }
+            // `Await` targets a live instance; if the runtime is in
+            // `Failed` state the step fails (executor then honours
+            // `on_failure`).
+            AtomicStep::Await { element, .. } => {
+                let rt = self.runtime_for(element)?;
+                let status = rt.status_check().await;
+                if matches!(status.state, paramodel_elements::OperationalState::Failed) {
+                    Ok(StepOutcome::Failed {
+                        error: ErrorInfo::builder()
+                            .kind("ElementFailed".to_owned())
+                            .message(format!(
+                                "element '{}' is in Failed state: {}",
+                                element.as_str(),
+                                status.summary,
+                            ))
+                            .build(),
+                    })
+                } else {
+                    Ok(StepOutcome::Completed {
+                        duration:                Duration::ZERO,
+                        materialization_outputs: MaterializationOutputs::new(),
+                        metrics:                 BTreeMap::new(),
+                        artifacts:               Vec::new(),
+                    })
+                }
+            }
+            // `SaveOutput` reads typed output from a previously
+            // deployed instance. Failure modes: the element is in
+            // `Failed` state, no `Deploy` has been recorded for the
+            // `(element, instance_number)` pair, or the selected
+            // `ResultParameter` isn't present in the captured outputs.
+            AtomicStep::SaveOutput {
+                element, instance_number, output, ..
+            } => {
+                let rt = self.runtime_for(element)?;
+                let status = rt.status_check().await;
+                if matches!(status.state, paramodel_elements::OperationalState::Failed) {
+                    return Ok(StepOutcome::Failed {
+                        error: ErrorInfo::builder()
+                            .kind("ElementFailed".to_owned())
+                            .message(format!(
+                                "element '{}' is in Failed state: {}",
+                                element.as_str(),
+                                status.summary,
+                            ))
+                            .build(),
+                    });
+                }
+                let stash = self.outputs.lock().expect("poisoned");
+                let outs = match stash.get(&(element.clone(), *instance_number)) {
+                    Some(o) => o,
+                    None => {
+                        return Ok(StepOutcome::Failed {
+                            error: ErrorInfo::builder()
+                                .kind("NoOutputsForInstance".to_owned())
+                                .message(format!(
+                                    "no materialization outputs recorded for \
+                                     ({}, {}); was Deploy run?",
+                                    element.as_str(),
+                                    instance_number,
+                                ))
+                                .build(),
+                        });
+                    }
+                };
+                match output {
+                    OutputSelector::ResultParameter { parameter } => {
+                        let Some(value) = outs.get(parameter) else {
+                            return Ok(StepOutcome::Failed {
+                                error: ErrorInfo::builder()
+                                    .kind("MissingResultParameter".to_owned())
+                                    .message(format!(
+                                        "element '{}' did not produce parameter '{}'",
+                                        element.as_str(),
+                                        parameter.as_str(),
+                                    ))
+                                    .build(),
+                            });
+                        };
+                        let mut metrics = BTreeMap::new();
+                        metrics.insert(parameter.clone(), value.clone());
+                        Ok(StepOutcome::Completed {
+                            duration:                Duration::ZERO,
+                            materialization_outputs: MaterializationOutputs::new(),
+                            metrics,
+                            artifacts:               Vec::new(),
+                        })
+                    }
+                    OutputSelector::Volume { mount } => {
+                        // Record a placeholder ArtifactRef keyed by
+                        // the mount path. Real adapters will produce
+                        // a content-addressed uri; here we echo the
+                        // mount name so the trial's artifacts list
+                        // reflects the capture request.
+                        let artifact = paramodel_trials::ArtifactRef::builder()
+                            .element(element.clone())
+                            .name(mount.clone())
+                            .uri(format!("mem://{}/{}/{}", element.as_str(), instance_number, mount))
+                            .content_type("application/octet-stream".to_owned())
+                            .build();
+                        Ok(StepOutcome::Completed {
+                            duration:                Duration::ZERO,
+                            materialization_outputs: MaterializationOutputs::new(),
+                            metrics:                 BTreeMap::new(),
+                            artifacts:               vec![artifact],
+                        })
+                    }
+                }
+            }
         }
     }
 

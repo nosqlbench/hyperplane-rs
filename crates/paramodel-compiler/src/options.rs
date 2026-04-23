@@ -4,6 +4,9 @@
 //! `CompilerOptions` and its auxiliary types.
 
 use std::collections::BTreeSet;
+use std::sync::Arc;
+
+use paramodel_elements::TokenResolver;
 
 use crate::error::WarningCode;
 
@@ -30,6 +33,14 @@ pub struct CompilerOptions {
 
     /// Warning codes to escalate to errors.
     pub fail_on_warning_codes: BTreeSet<WarningCode>,
+
+    /// Host-provided resolver for `ConfigEntry::Token` expressions.
+    /// When set, the compiler calls `resolver.resolve(key, param)`
+    /// during configuration resolution and binds the returned value
+    /// to the target parameter. When `None`, any `Token` entry the
+    /// plan tries to use emits `WarningCode::E002` — preserving the
+    /// pre-resolver behaviour.
+    pub token_resolver: Option<Arc<dyn TokenResolver>>,
 }
 
 impl Default for CompilerOptions {
@@ -40,6 +51,7 @@ impl Default for CompilerOptions {
             include_checkpoints:          true,
             max_warnings:                 None,
             fail_on_warning_codes:        BTreeSet::new(),
+            token_resolver:               None,
         }
     }
 }

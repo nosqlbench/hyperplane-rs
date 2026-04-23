@@ -95,7 +95,7 @@ impl Compiler for DefaultCompiler {
 
     fn validate(&self, plan: &TestPlan) -> Vec<CompilationDiagnostic> {
         let mut diags = Vec::new();
-        gather_unsupported(plan, &mut diags);
+        gather_unsupported(plan, &mut diags, self.options.token_resolver.is_some());
         if let Err(e) = plan.validate() {
             diags.push(error(
                 WarningCode::E001,
@@ -140,7 +140,7 @@ fn compile_impl(
     }
 
     // ---- unsupported-feature checks ----
-    gather_unsupported(plan, &mut errors);
+    gather_unsupported(plan, &mut errors, compiler.options.token_resolver.is_some());
 
     if !errors.is_empty() {
         return Err(CompilationError::many(errors));
@@ -185,7 +185,12 @@ fn compile_impl(
 
         for e in &plan.elements {
             // Resolve this trial's configuration for `e`.
-            let resolved = match resolve_configuration(plan, e, &offsets) {
+            let resolved = match resolve_configuration(
+                plan,
+                e,
+                &offsets,
+                compiler.options.token_resolver.as_ref(),
+            ) {
                 Ok(r) => r,
                 Err(diag) => return Err(CompilationError::single(diag)),
             };
@@ -273,6 +278,7 @@ fn compile_impl(
         &deploy_id_of,
         &teardown_id_of,
         &start_id,
+        compiler.options.token_resolver.as_ref(),
     )
     .map_err(CompilationError::single)?;
 
@@ -434,6 +440,7 @@ fn compile_impl(
         .element_instance_graph(element_instance_graph)
         .trial_ordering(plan.trial_ordering.clone())
         .trial_elements(trial_elements.into_iter().collect())
+        .policies(plan.policies.clone())
         .metadata(metadata)
         .build())
 }
@@ -442,7 +449,11 @@ fn compile_impl(
 // Unsupported-feature detection.
 // ---------------------------------------------------------------------------
 
-fn gather_unsupported(plan: &TestPlan, out: &mut Vec<CompilationDiagnostic>) {
+fn gather_unsupported(
+    plan:         &TestPlan,
+    out:          &mut Vec<CompilationDiagnostic>,
+    has_resolver: bool,
+) {
     // Every declared dependency must target an element the plan
     // also declares. Upstream plan validation doesn't catch this
     // consistently, so do it here — otherwise downstream edge
@@ -488,38 +499,45 @@ fn gather_unsupported(plan: &TestPlan, out: &mut Vec<CompilationDiagnostic>) {
         // cross-prototype Exclusive collision on the same target
         // within the same trial scope produces W002 — see
         // `detect_exclusive_collisions`.
-        // Token-based configuration entries require a token-resolution
-        // layer that v0.1 doesn't ship.
-        for (name, entry) in e.configuration.iter() {
+        // Token-based configuration entries require a resolver on
+        // `CompilerOptions`. When one is attached we defer validity
+        // to resolution time (`resolve_configuration` falls back to
+        // default / error on unresolvable keys).
+        if !has_resolver {
+            for (name, entry) in e.configuration.iter() {
+                if entry.is_token() {
+                    out.push(error(
+                        WarningCode::E002,
+                        format!(
+                            "element '{}' configuration parameter '{}' uses a token expression; \
+                             attach a TokenResolver via CompilerOptions to enable resolution",
+                            e.name, name,
+                        ),
+                        DiagnosticLocation::Parameter {
+                            element:   e.name.as_str().to_owned(),
+                            parameter: name.as_str().to_owned(),
+                        },
+                    ));
+                }
+            }
+        }
+    }
+    if !has_resolver {
+        for (coord, entry) in plan.bindings.iter() {
             if entry.is_token() {
                 out.push(error(
                     WarningCode::E002,
                     format!(
-                        "element '{}' configuration parameter '{}' uses a token expression; \
-                         token resolution is not yet wired up",
-                        e.name, name,
+                        "plan binding ({}, {}) uses a token expression; attach a \
+                         TokenResolver via CompilerOptions to enable resolution",
+                        coord.element, coord.parameter,
                     ),
                     DiagnosticLocation::Parameter {
-                        element:   e.name.as_str().to_owned(),
-                        parameter: name.as_str().to_owned(),
+                        element:   coord.element.as_str().to_owned(),
+                        parameter: coord.parameter.as_str().to_owned(),
                     },
                 ));
             }
-        }
-    }
-    for (coord, entry) in plan.bindings.iter() {
-        if entry.is_token() {
-            out.push(error(
-                WarningCode::E002,
-                format!(
-                    "plan binding ({}, {}) uses a token expression; not yet supported",
-                    coord.element, coord.parameter,
-                ),
-                DiagnosticLocation::Parameter {
-                    element:   coord.element.as_str().to_owned(),
-                    parameter: coord.parameter.as_str().to_owned(),
-                },
-            ));
         }
     }
     // Plan bindings are accepted only when literal — checked above.
@@ -656,6 +674,7 @@ const fn depends_on_mut(step: &mut AtomicStep) -> &mut Vec<StepId> {
     clippy::too_many_lines,
     reason = "single pass over dedicated edges; split hurts readability"
 )]
+#[allow(clippy::too_many_arguments, reason = "dedicated materialisation threads the compiler context")]
 fn apply_dedicated_materialisation(
     steps:          &mut Vec<AtomicStep>,
     plan:           &TestPlan,
@@ -663,6 +682,7 @@ fn apply_dedicated_materialisation(
     deploy_id_of:   &BTreeMap<(ElementName, u64), StepId>,
     teardown_id_of: &BTreeMap<(ElementName, u64), StepId>,
     start_id:       &StepId,
+    resolver:       Option<&std::sync::Arc<dyn paramodel_elements::TokenResolver>>,
 ) -> Result<(), CompilationDiagnostic> {
     // Collect all dedicated edges: (owner, target).
     let mut dedicated_edges: Vec<(ElementName, ElementName)> = Vec::new();
@@ -748,7 +768,12 @@ fn apply_dedicated_materialisation(
             let enumerator = MixedRadixEnumerator::new(&plan.axes);
             let offsets = enumerator.offsets(t);
             let trial_code = enumerator.trial_code(t);
-            let resolved = resolve_configuration(plan, target_element, &offsets)?;
+            let resolved = resolve_configuration(
+                plan,
+                target_element,
+                &offsets,
+                resolver,
+            )?;
 
             let trial_index = u32::try_from(t).unwrap_or(u32::MAX);
             let dedicated_instance = base_instance
@@ -1617,10 +1642,32 @@ fn apply_transitive_reduction(steps: &mut [AtomicStep]) {
 // Configuration resolution.
 // ---------------------------------------------------------------------------
 
+/// Try to extract a `Value` from a [`ConfigEntry`] for parameter
+/// `pname`. `Literal` entries return their value directly; `Token`
+/// entries are handed to the optional resolver. Returns `None` when
+/// the entry is a token that can't be resolved — the caller falls
+/// through to the next precedence level (typically the parameter
+/// default, or an error).
+fn resolve_config_entry(
+    entry:    &ConfigEntry,
+    pname:    &ParameterName,
+    resolver: Option<&std::sync::Arc<dyn paramodel_elements::TokenResolver>>,
+) -> Option<paramodel_elements::Value> {
+    match entry {
+        ConfigEntry::Literal { value } => Some(value.clone()),
+        ConfigEntry::Token { expr } => {
+            let r = resolver?;
+            let key = expr.as_single_key()?;
+            r.resolve(key, pname)
+        }
+    }
+}
+
 fn resolve_configuration(
-    plan:    &TestPlan,
-    element: &Element,
-    offsets: &[u32],
+    plan:     &TestPlan,
+    element:  &Element,
+    offsets:  &[u32],
+    resolver: Option<&std::sync::Arc<dyn paramodel_elements::TokenResolver>>,
 ) -> Result<ResolvedConfiguration, CompilationDiagnostic> {
     let mut out = ResolvedConfiguration::new();
     for parameter in &element.parameters {
@@ -1644,14 +1691,18 @@ fn resolve_configuration(
             element.name.clone(),
             pname.clone(),
         );
-        if let Some(ConfigEntry::Literal { value }) = plan.bindings.get(&coord) {
-            out.insert(pname.clone(), value.clone());
-            continue;
+        if let Some(entry) = plan.bindings.get(&coord) {
+            if let Some(v) = resolve_config_entry(entry, pname, resolver) {
+                out.insert(pname.clone(), v);
+                continue;
+            }
         }
         // Step 3 — element configuration.
-        if let Some(ConfigEntry::Literal { value }) = element.configuration.get(pname) {
-            out.insert(pname.clone(), value.clone());
-            continue;
+        if let Some(entry) = element.configuration.get(pname) {
+            if let Some(v) = resolve_config_entry(entry, pname, resolver) {
+                out.insert(pname.clone(), v);
+                continue;
+            }
         }
         // Step 4 — parameter default.
         if let Some(default) = parameter.default() {

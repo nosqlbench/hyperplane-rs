@@ -182,20 +182,51 @@ pub trait ResourceManager: Send + Sync + 'static {
 // DefaultResourceManager — unbounded reference impl.
 // ---------------------------------------------------------------------------
 
-/// Unbounded, in-memory resource manager. Always admits; no pools,
-/// no quotas; records active allocations for usage reporting.
+/// In-memory resource manager. Defaults to unbounded (always admits).
+/// Opt into a capacity cap via [`DefaultResourceManager::with_capacity`];
+/// bounded mode tracks free resources and refuses allocations that
+/// would exceed the cap.
 #[derive(Debug, Default)]
 pub struct DefaultResourceManager {
-    active: Mutex<Vec<ResourceAllocation>>,
+    active:   Mutex<Vec<ResourceAllocation>>,
+    capacity: Mutex<Option<ResourceCapacity>>,
 }
 
 impl DefaultResourceManager {
-    /// Construct.
+    /// Construct an unbounded manager.
     #[must_use]
     pub const fn new() -> Self {
         Self {
-            active: Mutex::new(Vec::new()),
+            active:   Mutex::new(Vec::new()),
+            capacity: Mutex::new(None),
         }
+    }
+
+    /// Construct with an upper bound on total granted capacity.
+    /// Requests that would push aggregate grants past this cap are
+    /// refused with [`ResourceError::Insufficient`].
+    #[must_use]
+    pub fn with_capacity(capacity: ResourceCapacity) -> Self {
+        Self {
+            active:   Mutex::new(Vec::new()),
+            capacity: Mutex::new(Some(capacity)),
+        }
+    }
+
+    /// Sum of currently-granted capacity. Helper shared by `available`
+    /// and `can_allocate`.
+    fn granted_sum(active: &[ResourceAllocation]) -> ResourceCapacity {
+        let mut total = ResourceCapacity::default();
+        for a in active {
+            total.cpu_cores += a.granted.cpu_cores;
+            total.memory_mb += a.granted.memory_mb;
+            total.storage_gb += a.granted.storage_gb;
+            total.network_gbps += a.granted.network_gbps;
+            for (k, v) in &a.granted.custom {
+                *total.custom.entry(k.clone()).or_insert(0) += *v;
+            }
+        }
+        total
     }
 }
 
@@ -205,11 +236,16 @@ impl ResourceManager for DefaultResourceManager {
         &self,
         request: &ResourceRequest,
     ) -> Result<ResourceAllocation, ResourceError> {
+        if !self.can_allocate(request) {
+            return Err(ResourceError::Insufficient {
+                reason: format!(
+                    "request {:?} exceeds remaining capacity",
+                    request,
+                ),
+            });
+        }
         let allocation = ResourceAllocation {
-            id:      AllocationId::from_ulid(Ulid::from_parts(
-                u64::try_from(jiff::Timestamp::now().as_second().max(0)).unwrap_or(0),
-                0,
-            )),
+            id:      AllocationId::from_ulid(Ulid::new()),
             granted: ResourceCapacity {
                 cpu_cores:    request.cpu_cores,
                 memory_mb:    request.memory_mb,
@@ -229,17 +265,59 @@ impl ResourceManager for DefaultResourceManager {
         active.retain(|a| a.id != allocation.id);
     }
 
-    fn can_allocate(&self, _request: &ResourceRequest) -> bool {
+    fn can_allocate(&self, request: &ResourceRequest) -> bool {
+        let cap_guard = self.capacity.lock().expect("poisoned");
+        let Some(cap) = cap_guard.as_ref() else {
+            return true; // unbounded
+        };
+        let active = self.active.lock().expect("poisoned");
+        let granted = Self::granted_sum(&active);
+        if granted.cpu_cores + request.cpu_cores > cap.cpu_cores {
+            return false;
+        }
+        if granted.memory_mb.saturating_add(request.memory_mb) > cap.memory_mb {
+            return false;
+        }
+        if granted.storage_gb.saturating_add(request.storage_gb) > cap.storage_gb {
+            return false;
+        }
+        if granted.network_gbps + request.network_gbps > cap.network_gbps {
+            return false;
+        }
+        for (k, need) in &request.custom {
+            let have = cap.custom.get(k).copied().unwrap_or(0);
+            let used = granted.custom.get(k).copied().unwrap_or(0);
+            if used.saturating_add(*need) > have {
+                return false;
+            }
+        }
         true
     }
 
     fn available(&self) -> ResourceSnapshot {
+        let cap_guard = self.capacity.lock().expect("poisoned");
+        let Some(cap) = cap_guard.as_ref() else {
+            return ResourceSnapshot {
+                cpu_cores_free:    f64::MAX,
+                memory_mb_free:    u64::MAX,
+                storage_gb_free:   u64::MAX,
+                network_gbps_free: f64::MAX,
+                custom_free:       BTreeMap::new(),
+            };
+        };
+        let active = self.active.lock().expect("poisoned");
+        let granted = Self::granted_sum(&active);
+        let mut custom_free: BTreeMap<String, u64> = BTreeMap::new();
+        for (k, total) in &cap.custom {
+            let used = granted.custom.get(k).copied().unwrap_or(0);
+            custom_free.insert(k.clone(), total.saturating_sub(used));
+        }
         ResourceSnapshot {
-            cpu_cores_free:    f64::MAX,
-            memory_mb_free:    u64::MAX,
-            storage_gb_free:   u64::MAX,
-            network_gbps_free: f64::MAX,
-            custom_free:       BTreeMap::new(),
+            cpu_cores_free:    (cap.cpu_cores - granted.cpu_cores).max(0.0),
+            memory_mb_free:    cap.memory_mb.saturating_sub(granted.memory_mb),
+            storage_gb_free:   cap.storage_gb.saturating_sub(granted.storage_gb),
+            network_gbps_free: (cap.network_gbps - granted.network_gbps).max(0.0),
+            custom_free,
         }
     }
 

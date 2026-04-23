@@ -53,6 +53,25 @@ impl TokenExpr {
     pub fn into_inner(self) -> String {
         self.0
     }
+
+    /// If this expression is a bare `${KEY}` (no surrounding text,
+    /// no nested `$` or braces), return `KEY`. Otherwise `None`.
+    ///
+    /// The compiler uses this to classify simple single-token
+    /// expressions that can be handed verbatim to a
+    /// [`TokenResolver`]. Richer grammars (string interpolation,
+    /// arithmetic, conditionals) are deferred to a follow-up slice
+    /// and will parse the full string separately.
+    #[must_use]
+    pub fn as_single_key(&self) -> Option<&str> {
+        let inner = self.0.strip_prefix("${")?.strip_suffix('}')?;
+        if inner.is_empty() || inner.contains('$')
+            || inner.contains('{') || inner.contains('}')
+        {
+            return None;
+        }
+        Some(inner)
+    }
 }
 
 impl std::fmt::Display for TokenExpr {
@@ -72,6 +91,24 @@ impl<'de> Deserialize<'de> for TokenExpr {
         let s = String::deserialize(d)?;
         Self::new(s).map_err(serde::de::Error::custom)
     }
+}
+
+// ---------------------------------------------------------------------------
+// TokenResolver — host-provided resolution hook.
+// ---------------------------------------------------------------------------
+
+/// Host-provided resolver that maps a bare token key (as extracted
+/// by [`TokenExpr::as_single_key`]) to a typed [`Value`].
+///
+/// The compiler calls `resolve(key, target_parameter)` during
+/// configuration resolution. Returning `Some(value)` binds the value
+/// to the target parameter as if it were a `Literal` at the same
+/// precedence level as the original `Token`. Returning `None` lets
+/// the compiler fall through to the next precedence level (plan
+/// binding → element default → error).
+pub trait TokenResolver: Send + Sync + std::fmt::Debug + 'static {
+    /// Resolve a bare key for the given target parameter.
+    fn resolve(&self, key: &str, target: &ParameterName) -> Option<Value>;
 }
 
 // ---------------------------------------------------------------------------

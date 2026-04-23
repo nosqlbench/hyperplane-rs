@@ -144,6 +144,13 @@ pub trait ExecutionStateManager: Send + Sync + 'static {
     /// Take a checkpoint snapshot.
     async fn checkpoint(&self, checkpoint: &Checkpoint);
 
+    /// Load a previously-saved checkpoint by id. `None` if this
+    /// manager doesn't persist checkpoints (the default for
+    /// `NoopStateManager`) or if the id is unknown.
+    async fn load_checkpoint(&self, _id: &CheckpointId) -> Option<Checkpoint> {
+        None
+    }
+
     /// Reconstruct per-execution state for a resume.
     async fn recover(&self, execution: &ExecutionId, plan: &ExecutionPlan) -> RecoveryResult;
 
@@ -178,6 +185,145 @@ pub trait ExecutionStateManager: Send + Sync + 'static {
             | AtomicStep::Barrier { .. }
             | AtomicStep::Checkpoint { .. } => IdempotencyClass::NonIdempotent,
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// InMemoryStateManager — persist-to-heap reference impl.
+// ---------------------------------------------------------------------------
+
+/// Reference state manager that keeps checkpoints, per-execution
+/// event streams, and trial results in memory. Suitable for tests
+/// and for resume scenarios within a single process.
+#[derive(Debug, Default)]
+pub struct InMemoryStateManager {
+    checkpoints:   std::sync::Mutex<BTreeMap<CheckpointId, Checkpoint>>,
+    events:        std::sync::Mutex<Vec<JournalEvent>>,
+    suspensions:   std::sync::Mutex<BTreeMap<ExecutionId, String>>,
+    trial_results: std::sync::Mutex<
+        BTreeMap<ExecutionId, BTreeMap<TrialId, TrialResult>>,
+    >,
+}
+
+impl InMemoryStateManager {
+    /// Construct an empty state manager.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+#[async_trait]
+impl ExecutionStateManager for InMemoryStateManager {
+    async fn record_event(&self, event: JournalEvent) {
+        self.events.lock().expect("poisoned").push(event);
+    }
+
+    async fn checkpoint(&self, checkpoint: &Checkpoint) {
+        self.checkpoints
+            .lock()
+            .expect("poisoned")
+            .insert(checkpoint.id.clone(), checkpoint.clone());
+    }
+
+    async fn load_checkpoint(&self, id: &CheckpointId) -> Option<Checkpoint> {
+        self.checkpoints.lock().expect("poisoned").get(id).cloned()
+    }
+
+    async fn recover(
+        &self,
+        execution: &ExecutionId,
+        _plan:     &ExecutionPlan,
+    ) -> RecoveryResult {
+        let events = self.events.lock().expect("poisoned");
+        let mut out = RecoveryResult::default();
+        for e in events.iter().filter(|e| e.execution_id == *execution) {
+            match &e.kind {
+                crate::journal::JournalEventKind::StepCompleted { step_id, .. } => {
+                    out.completed_step_ids.insert(step_id.clone());
+                    out.in_flight_step_ids.remove(step_id);
+                }
+                crate::journal::JournalEventKind::StepFailed { step_id, .. } => {
+                    out.failed_step_ids.insert(step_id.clone());
+                    out.in_flight_step_ids.remove(step_id);
+                }
+                crate::journal::JournalEventKind::StepSkipped { step_id, .. } => {
+                    out.skipped_step_ids.insert(step_id.clone());
+                    out.in_flight_step_ids.remove(step_id);
+                }
+                crate::journal::JournalEventKind::StepStarted { step_id, .. } => {
+                    out.in_flight_step_ids.insert(step_id.clone());
+                }
+                crate::journal::JournalEventKind::ExecutionCompleted { .. } => {
+                    out.was_clean_shutdown = true;
+                }
+                _ => {}
+            }
+        }
+        out
+    }
+
+    async fn is_step_completed(
+        &self,
+        execution: &ExecutionId,
+        step:      &StepId,
+    ) -> bool {
+        let events = self.events.lock().expect("poisoned");
+        events.iter().any(|e| {
+            e.execution_id == *execution
+                && matches!(
+                    &e.kind,
+                    crate::journal::JournalEventKind::StepCompleted { step_id, .. }
+                        if step_id == step,
+                )
+        })
+    }
+
+    async fn record_suspension(&self, execution: &ExecutionId, reason: &str) {
+        self.suspensions
+            .lock()
+            .expect("poisoned")
+            .insert(*execution, reason.to_owned());
+    }
+
+    async fn save_trial_result(
+        &self,
+        execution: &ExecutionId,
+        result:    &TrialResult,
+    ) {
+        self.trial_results
+            .lock()
+            .expect("poisoned")
+            .entry(*execution)
+            .or_default()
+            .insert(result.trial_id.clone(), result.clone());
+    }
+
+    async fn get_trial_result(&self, trial: &TrialId) -> Option<TrialResult> {
+        let all = self.trial_results.lock().expect("poisoned");
+        all.values()
+            .find_map(|by_trial| by_trial.get(trial).cloned())
+    }
+
+    async fn get_trial_results(&self, execution: &ExecutionId) -> Vec<TrialResult> {
+        self.trial_results
+            .lock()
+            .expect("poisoned")
+            .get(execution)
+            .map(|m| m.values().cloned().collect())
+            .unwrap_or_default()
+    }
+
+    async fn cleanup(&self, execution: &ExecutionId) {
+        self.events
+            .lock()
+            .expect("poisoned")
+            .retain(|e| e.execution_id != *execution);
+        self.suspensions.lock().expect("poisoned").remove(execution);
+        self.trial_results
+            .lock()
+            .expect("poisoned")
+            .remove(execution);
     }
 }
 

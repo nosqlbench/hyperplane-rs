@@ -21,6 +21,7 @@ use crate::error::{PlanError, Result};
 use crate::ids::TestPlanId;
 use crate::instance::ElementInstanceGraph;
 use crate::ordering::{OptimizationStrategy, TrialOrdering};
+use crate::policies::ExecutionPolicies;
 use crate::step::{AtomicStep, StepId};
 
 // ---------------------------------------------------------------------------
@@ -656,6 +657,11 @@ pub struct ExecutionPlan {
     /// override it.
     pub max_concurrency: Option<u32>,
 
+    /// Execution policies carried through from the source `TestPlan`.
+    /// Governs runtime behaviour such as `on_failure` cascade policy.
+    #[builder(default)]
+    pub policies: ExecutionPolicies,
+
     /// Compile-time metadata.
     pub metadata: ExecutionPlanMetadata,
 
@@ -699,8 +705,8 @@ impl ExecutionPlan {
     ///
     /// Covers `source_plan_fingerprint`, both graph fingerprints,
     /// resource requirements, checkpoint strategy, trial ordering,
-    /// trial elements, and `max_concurrency`. Excludes `id`, labels,
-    /// tags, and metadata.
+    /// trial elements, `max_concurrency`, and `policies`. Excludes
+    /// `id`, labels, tags, and metadata.
     #[must_use]
     pub fn fingerprint(&self) -> Fingerprint {
         let mut out = Vec::new();
@@ -746,6 +752,9 @@ impl ExecutionPlan {
             }
             None => out.push(0x00),
         }
+        out.extend_from_slice(
+            &serde_json::to_vec(&self.policies).expect("policies serialise"),
+        );
         Fingerprint::of(&out)
     }
 }
