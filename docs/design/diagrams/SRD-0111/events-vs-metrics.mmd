@@ -1,7 +1,9 @@
 %% Copyright (c) Jonathan Shook
 %% SPDX-License-Identifier: Apache-2.0
+%%{init: {'flowchart': {'nodeSpacing': 40, 'rankSpacing': 50}}}%%
 flowchart TB
-    subgraph Events ["Events (discrete, every one persisted)"]
+    subgraph Ev ["events"]
+        direction LR
         AG1["agent"]
         WS1["WebSocket"]
         C1["controller"]
@@ -10,14 +12,22 @@ flowchart TB
         AG1 --> WS1 --> C1 --> ES --> SUB
     end
 
-    subgraph Metrics ["Metrics (time-series, sampled)"]
+    subgraph Me ["metrics"]
+        direction LR
         AG2["agent vmagent"]
-        VM["VictoriaMetrics<br/>(metrics backend, external)"]
+        VM["VictoriaMetrics<br/>(external backend)"]
         Q["PromQL queries"]
         AG2 --> VM --> Q
     end
 
+    NoteEv["discrete<br/>every one persisted<br/>event-sourcing posture"]
+    NoteMe["time-series<br/>sampled (15s)<br/>pre-reducible"]
+    Ev -.-> NoteEv
+    Me -.-> NoteMe
+
     classDef ev fill:#e8f0ff,stroke:#3366aa
     classDef me fill:#fff4e0,stroke:#aa7733
+    classDef note fill:#f0f0f0,stroke:#666
     class AG1,WS1,C1,ES,SUB ev
     class AG2,VM,Q me
+    class NoteEv,NoteMe note

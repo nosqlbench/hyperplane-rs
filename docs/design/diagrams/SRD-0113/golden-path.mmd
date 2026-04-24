@@ -1,45 +1,15 @@
 %% Copyright (c) Jonathan Shook
 %% SPDX-License-Identifier: Apache-2.0
-flowchart TB
-    subgraph P1 ["Phase 1 — authoring"]
-        A1["hyper image register<br/>→ extract @param<br/>→ cache ParamSpace"]
-        A2["write plan.yaml"]
-        A3["hyper plan validate<br/>→ paramodel compile"]
-        A4["hyper plan submit<br/>→ persist PlanSpec"]
-        A1 --> A2 --> A3 --> A4
-    end
-
-    subgraph P2 ["Phase 2 — execution start"]
-        B1["hyper execution start<br/>→ compile Atomic Step Graph<br/>→ EXECUTION_STARTED"]
-    end
-
-    subgraph P3 ["Phase 3 — provisioning"]
-        C1["Deploy(host)<br/>EC2Node.materialize<br/>RunInstances<br/>state machine advances"]
-        C2["Deploy(host-agent)<br/>SSH deploy once<br/>WebSocket opens<br/>Register<br/>REGISTERED → ACTIVE_HEARTBEAT"]
-        C1 --> C2
-    end
-
-    subgraph P4 ["Phase 4 — workload"]
-        D1["Deploy(harness)<br/>ServiceDocker<br/>EnsureContainerRunning<br/>docker pull + run<br/>healthcheck gate"]
-        D2["Deploy(client)<br/>CommandDocker<br/>RunCommand<br/>docker run foreground"]
-        D3["Await(client)<br/>block on exit<br/>agent captures payload"]
-        D1 --> D2 --> D3
-    end
-
-    subgraph P5 ["Phase 5 — teardown"]
-        E1["SaveOutput(client)<br/>TrialMetrics via ResultStore"]
-        E2["Teardown(harness)<br/>EnsureContainerAbsent"]
-        E3["Teardown(host)<br/>Shutdown → OS shutdown<br/>AWS terminates<br/>node: TERMINATED"]
-        E1 --> E2 --> E3
-    end
-
-    subgraph P6 ["Phase 6 — query"]
-        F1["hyper execution show /<br/>web UI /executions/{id}"]
-        F2["query results + artifacts + events"]
-        F1 --> F2
-    end
+%%{init: {'flowchart': {'nodeSpacing': 25, 'rankSpacing': 40}}}%%
+flowchart LR
+    P1["<b>Phase 1<br/>authoring</b><br/><br/>• hyper image register<br/>  → extract @param<br/>  → cache ParamSpace<br/>• write plan.yaml<br/>• hyper plan validate<br/>• hyper plan submit"]
+    P2["<b>Phase 2<br/>execution start</b><br/><br/>• hyper execution start<br/>• compile Atomic<br/>  Step Graph<br/>• EXECUTION_STARTED"]
+    P3["<b>Phase 3<br/>provisioning</b><br/><br/>• Deploy(host)<br/>• EC2Node.materialize<br/>• RunInstances<br/>• state machine advances<br/>• Deploy(host-agent)<br/>• SSH once<br/>• WebSocket + Register<br/>• ACTIVE_HEARTBEAT"]
+    P4["<b>Phase 4<br/>workload</b><br/><br/>• Deploy(harness)<br/>  ServiceDocker<br/>• docker pull + run<br/>• healthcheck gate<br/>• Deploy(client)<br/>  CommandDocker<br/>• Await(client exits)"]
+    P5["<b>Phase 5<br/>teardown</b><br/><br/>• SaveOutput(client)<br/>  → TrialMetrics<br/>• Teardown(harness)<br/>• Teardown(host)<br/>• Shutdown → AWS term<br/>• TERMINATED"]
+    P6["<b>Phase 6<br/>query</b><br/><br/>• hyper execution show<br/>• web UI<br/>  /executions/{id}<br/>• query results<br/>  + artifacts + events"]
 
     P1 --> P2 --> P3 --> P4 --> P5 --> P6
 
-    classDef phase fill:#e8f0ff,stroke:#3366aa
-    class A1,A2,A3,A4,B1,C1,C2,D1,D2,D3,E1,E2,E3,F1,F2 phase
+    classDef phase fill:#e8f0ff,stroke:#3366aa,stroke-width:2px
+    class P1,P2,P3,P4,P5,P6 phase

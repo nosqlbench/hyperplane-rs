@@ -1,7 +1,9 @@
 %% Copyright (c) Jonathan Shook
 %% SPDX-License-Identifier: Apache-2.0
+%%{init: {'flowchart': {'nodeSpacing': 40, 'rankSpacing': 50}}}%%
 flowchart LR
-    subgraph Container ["Container writes"]
+    subgraph Container ["container writes"]
+        direction TB
         SO["stdout (stream)"]
         SE["stderr (stream)"]
         FL["files in<br/>output volume"]
@@ -9,9 +11,10 @@ flowchart LR
         EC["exit code"]
     end
 
-    subgraph Agent ["Agent captures"]
-        T1["tee to stdout.log"]
-        T2["tee to stderr.log"]
+    subgraph Agent ["agent captures"]
+        direction TB
+        T1["tee stdout.log"]
+        T2["tee stderr.log"]
         T3["read on exit"]
         T4["parse on exit"]
         T5["capture on exit"]
@@ -19,10 +22,11 @@ flowchart LR
         T2L["live LogChunk"]
     end
 
-    subgraph Paramodel ["Paramodel stores"]
-        A1["artifact (appendable)"]
-        A2["artifact (appendable)"]
-        A3["artifacts (one each)"]
+    subgraph Paramodel ["paramodel stores"]
+        direction TB
+        A1["artifact<br/>(appendable)"]
+        A2["artifact"]
+        A3["artifacts<br/>(one each)"]
         A4["TrialMetrics<br/>via ResultStore"]
         A5["StepOutcome"]
         EV["event stream"]

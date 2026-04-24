@@ -1,32 +1,33 @@
 %% Copyright (c) Jonathan Shook
 %% SPDX-License-Identifier: Apache-2.0
+%%{init: {'flowchart': {'nodeSpacing': 30, 'rankSpacing': 50}}}%%
 flowchart TB
-    User["User types: hyper execution show &lt;TAB&gt;"]
+    User["User types:<br/>hyper execution show &lt;TAB&gt;"]
     Shell["shell<br/>(bash / zsh / fish / pwsh)"]
-    Shim["shell completion hook<br/>(per-shell shim, installed once)"]
+    Shim["shell completion hook<br/>(per-shell shim,<br/>installed once)"]
     Hyper["hyper __complete<br/>(same binary,<br/>internal subcommand)"]
+    Parser["veks-completion<br/>parse partial command line<br/>→ identify completion point<br/>→ dispatch by source"]
 
-    subgraph Dispatch ["veks-completion: parse partial command line → identify completion point → dispatch by source"]
-        Static["static → compiled-in list"]
-        File["file → filesystem"]
-        Live["live → GET controller API"]
-    end
+    Static["static:<br/>compiled-in list"]
+    File["file:<br/>filesystem"]
+    Live["live:<br/>GET controller API"]
 
-    Live --> LC{{"success?"}}
-    LC -- yes --> Refresh["refresh cache<br/>return live"]
-    LC -- no --> Fall["fall back to cache<br/>(stale if older)"]
+    LC{{"success?"}}
+    Refresh["refresh cache<br/>return live"]
+    Fall["fall back to cache<br/>(stale if older)"]
 
-    Out["completions back to shell → rendered to user"]
+    Out["completions back to shell<br/>→ rendered to user"]
 
-    User --> Shell --> Shim --> Hyper --> Dispatch
-    Static --> Out
-    File --> Out
-    Refresh --> Out
-    Fall --> Out
+    User --> Shell --> Shim --> Hyper --> Parser
+    Parser --> Static --> Out
+    Parser --> File --> Out
+    Parser --> Live --> LC
+    LC -- yes --> Refresh --> Out
+    LC -- no --> Fall --> Out
 
     classDef user fill:#e8f0ff,stroke:#3366aa
     classDef bin fill:#fff4e0,stroke:#aa7733
     classDef dispatch fill:#e8ffe8,stroke:#338833
     class User,Shell user
-    class Shim,Hyper bin
-    class Static,File,Live,Refresh,Fall dispatch
+    class Shim,Hyper,Parser bin
+    class Static,File,Live,Refresh,Fall,Out dispatch

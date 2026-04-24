@@ -1,16 +1,19 @@
 %% Copyright (c) Jonathan Shook
 %% SPDX-License-Identifier: Apache-2.0
+%%{init: {'flowchart': {'nodeSpacing': 40, 'rankSpacing': 80}}}%%
 flowchart TB
-    subgraph Traits ["paramodel-persistence crate: six traits"]
-        MS["MetadataStore<br/>studies, plans, elements,<br/>parameters<br/>(slowly-changing)"]
-        ER["ExecutionRepository<br/>live execution state snapshot"]
-        CS["CheckpointStore<br/>execution progress for resume"]
-        JS["JournalStore<br/>monotonic execution event log"]
-        RS["ResultStore<br/>trial outcomes + metric bindings"]
-        AS["ArtifactStore<br/>captured blobs: logs, outputs,<br/>dumps (appendable)"]
-    end
+    MS["<b>MetadataStore</b><br/>studies, plans,<br/>elements, parameters<br/>(slowly-changing,<br/>authored content)"]
+    ER["<b>ExecutionRepository</b><br/>live execution<br/>state snapshot<br/>(one row per<br/>active execution)"]
+    CS["<b>CheckpointStore</b><br/>execution progress<br/>for resume<br/>(paused/interrupted<br/>→ replay)"]
+    JS["<b>JournalStore</b><br/>monotonic<br/>execution event log<br/>(every step<br/>transition)"]
+    RS["<b>ResultStore</b><br/>trial outcomes +<br/>metric bindings<br/>(terminal state of<br/>completed trials)"]
+    AS["<b>ArtifactStore</b><br/>captured blobs:<br/>logs, outputs, dumps<br/>(appendable,<br/>content-addressed)"]
 
-    Impl["hyperplane-store-sqlite<br/>(single-file, WAL mode,<br/>per-trait modules)"]
+    MS ~~~ ER ~~~ CS
+    JS ~~~ RS ~~~ AS
+
+    Impl[("hyperplane-store-sqlite<br/>single file, WAL mode,<br/>per-trait modules")]
+
     MS --> Impl
     ER --> Impl
     CS --> Impl
@@ -19,6 +22,6 @@ flowchart TB
     AS --> Impl
 
     classDef trait fill:#e8f0ff,stroke:#3366aa
-    classDef impl fill:#e8ffe8,stroke:#338833
+    classDef impl fill:#e8ffe8,stroke:#338833,stroke-width:2px
     class MS,ER,CS,JS,RS,AS trait
     class Impl impl

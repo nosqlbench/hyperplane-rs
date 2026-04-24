@@ -1,23 +1,19 @@
 %% Copyright (c) Jonathan Shook
 %% SPDX-License-Identifier: Apache-2.0
-flowchart TB
-    subgraph TCK ["paramodel-tck (opt-in)"]
-        IP["ImplementationProvider family<br/>ParameterProvider, ElementProvider,<br/>TrialProvider, PlanProvider,<br/>ExecutorProvider, StorageProvider"]
-        subgraph Cases ["Conformance cases"]
-            Trait["trait-level cases<br/>(per trait: round-trip,<br/>errors, edge)"]
-            Inv["invariant cases<br/>(every INV-* code<br/>has a case)"]
-            Scen["scenario cases<br/>(end-to-end multi-trait)"]
-        end
+%%{init: {'flowchart': {'nodeSpacing': 40, 'rankSpacing': 60}}}%%
+flowchart LR
+    subgraph TCK ["paramodel-tck"]
+        direction TB
+        IP["ImplementationProvider<br/>family<br/>(ParameterProvider,<br/>ElementProvider,<br/>TrialProvider,<br/>PlanProvider,<br/>ExecutorProvider,<br/>StorageProvider)"]
+        Cases["Conformance cases:<br/>• trait-level<br/>• invariant<br/>• scenario"]
         Harn["Harness<br/>wires provider into cases<br/>produces pass/fail report"]
+        IP --> Cases --> Harn
     end
 
-    Mock["paramodel-mock (opt-in)<br/>in-memory reference impls<br/>baseline fixture for TCK + docs"]
-
+    Mock["paramodel-mock<br/>(baseline fixture)"]
     Adopter1["hyperplane-store-sqlite"]
     Adopter2["future backend"]
 
-    IP --> Cases
-    Cases --> Harn
     Mock -. "baseline" .-> Harn
     Adopter1 --> IP
     Adopter2 --> IP
@@ -25,6 +21,6 @@ flowchart TB
     classDef tck fill:#e8f0ff,stroke:#3366aa
     classDef mock fill:#fff4e0,stroke:#aa7733
     classDef adopt fill:#e8ffe8,stroke:#338833
-    class IP,Trait,Inv,Scen,Harn tck
+    class IP,Cases,Harn tck
     class Mock mock
     class Adopter1,Adopter2 adopt

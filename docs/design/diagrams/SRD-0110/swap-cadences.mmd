@@ -1,24 +1,18 @@
 %% Copyright (c) Jonathan Shook
 %% SPDX-License-Identifier: Apache-2.0
-flowchart TB
-    subgraph Full ["Full-page swap"]
-        F["trigger: link navigation<br/>hx-boost='true'<br/>server returns complete page"]
-    end
+%%{init: {'flowchart': {'nodeSpacing': 40, 'rankSpacing': 60}}}%%
+flowchart LR
+    F["<b>Full-page swap</b><br/><br/>trigger: link navigation<br/>hx-boost='true'<br/>server returns<br/>complete page"]
+    P["<b>Panel swap</b><br/>(on-demand)<br/><br/>trigger: user action<br/>(refresh, filter, expand)<br/>hx-get='/path/to/panel'<br/>server returns<br/>HTML fragment"]
+    L["<b>Live swap</b><br/>(push-driven)<br/><br/>trigger: backend state change<br/>hx-ext='sse' + sse-connect<br/>+ sse-swap=name<br/>server pushes<br/>HTML fragments over SSE<br/><br/>fallback: hx-trigger='every Ns'<br/>deferred: hx-ext='ws'"]
+    Note["<i>convention:</i><br/>every live-swap target has<br/>a stable id matching<br/>the server's SSE event name"]
 
-    subgraph Panel ["Panel swap (on-demand)"]
-        P["trigger: user action<br/>(refresh, filter, expand)<br/>hx-get='/path/to/panel'<br/>server returns HTML fragment"]
-    end
+    F ~~~ P ~~~ L
+    L -.-> Note
 
-    subgraph Live ["Live swap (push-driven)"]
-        L["trigger: backend state change<br/>hx-ext='sse' + sse-connect + sse-swap<br/>server pushes HTML fragments over SSE<br/><br/>fallback: hx-trigger='every Ns'<br/>deferred: hx-ext='ws'"]
-    end
-
-    Note["convention: every live-swap target has a stable id<br/>matching the server's SSE event name"]
-    Live -.-> Note
-
-    classDef full fill:#e8f0ff,stroke:#3366aa
-    classDef panel fill:#fff4e0,stroke:#aa7733
-    classDef live fill:#e8ffe8,stroke:#338833
+    classDef full fill:#e8f0ff,stroke:#3366aa,stroke-width:2px
+    classDef panel fill:#fff4e0,stroke:#aa7733,stroke-width:2px
+    classDef live fill:#e8ffe8,stroke:#338833,stroke-width:2px
     classDef conv fill:#f0f0f0,stroke:#666
     class F full
     class P panel

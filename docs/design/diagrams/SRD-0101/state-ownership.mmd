@@ -1,28 +1,22 @@
 %% Copyright (c) Jonathan Shook
 %% SPDX-License-Identifier: Apache-2.0
-%%{init: {'flowchart': {'nodeSpacing': 40, 'rankSpacing': 60}}}%%
+%%{init: {'flowchart': {'nodeSpacing': 40, 'rankSpacing': 80}}}%%
 flowchart LR
-    subgraph PM ["Paramodel-owned (via SRD-0012 traits)"]
-        PMT["studies, plans, executions, elements<br/>parameters, checkpoints, journal_events<br/>trials, trial_metrics, artifacts"]
-    end
-    subgraph BR ["Bridge tables (hyperplane-owned, FK into paramodel)"]
-        BRT["trial_deployments (trials.id ↔ container_id)<br/>execution_nodes (executions.id ↔ nodes.id)"]
-    end
-    subgraph HP ["Hyperplane-owned"]
-        HPT["nodes, agents, deployments, provisioning<br/>images, image_tag_cache, ssh_keys, config<br/>users, groups, roles, api_tokens<br/>workspaces, resource_shares<br/>audit_events, system_events"]
-    end
+    PM["<b>Paramodel-owned</b><br/>(via SRD-0012 traits)<br/><br/>studies, plans, executions, elements<br/>parameters, checkpoints, journal_events<br/>trials, trial_metrics, artifacts"]
+    BR["<b>Bridge tables</b><br/>(hyperplane-owned,<br/>FK into paramodel)<br/><br/>trial_deployments<br/>(trials.id ↔ container_id)<br/>execution_nodes<br/>(executions.id ↔ nodes.id)"]
+    HP["<b>Hyperplane-owned</b><br/><br/>nodes, agents, deployments<br/>provisioning, images, image_tag_cache<br/>ssh_keys, config<br/>users, groups, roles, api_tokens<br/>workspaces, resource_shares<br/>audit_events, system_events"]
 
-    PMT -. "hyperplane reads via trait" .-> BRT
-    BRT -. "FK" .-> HPT
+    PM -. "hyperplane reads<br/>via trait" .-> BR
+    BR -. "FK" .-> HP
 
     Note["all three tiers live in<br/>ONE SQLite file per deployment<br/>(INV-STATE-SINGLE-FILE)"]
-    HPT -.-> Note
+    HP -.-> Note
 
-    classDef paramodel fill:#e8f0ff,stroke:#3366aa
-    classDef bridge fill:#fff4e0,stroke:#aa7733
-    classDef hyperplane fill:#e8ffe8,stroke:#338833
+    classDef paramodel fill:#e8f0ff,stroke:#3366aa,stroke-width:2px
+    classDef bridge fill:#fff4e0,stroke:#aa7733,stroke-width:2px
+    classDef hyperplane fill:#e8ffe8,stroke:#338833,stroke-width:2px
     classDef note fill:#f0f0f0,stroke:#666
-    class PMT paramodel
-    class BRT bridge
-    class HPT hyperplane
+    class PM paramodel
+    class BR bridge
+    class HP hyperplane
     class Note note
