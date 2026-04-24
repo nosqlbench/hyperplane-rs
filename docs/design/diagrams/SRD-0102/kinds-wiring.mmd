@@ -1,15 +1,16 @@
 %% Copyright (c) Jonathan Shook
 %% SPDX-License-Identifier: Apache-2.0
-flowchart TB
-    EC2["EC2Node<br/>shutdown_semantics=Service<br/><br/>● socket: hosts"]
-    AG["Agent<br/>shutdown_semantics=Service<br/><br/>○ plug: deploys-onto<br/>● socket: commands-on"]
-    SVC["ServiceDocker<br/>shutdown_semantics=Service<br/><br/>○ plug: commands-on<br/>● socket: depends-on-service"]
-    CMD["CommandDocker<br/>shutdown_semantics=Command<br/><br/>○ plug: commands-on<br/>○ plug: depends-on-service (optional)"]
+%%{init: {'flowchart': {'nodeSpacing': 50, 'rankSpacing': 80}}}%%
+flowchart LR
+    EC2["<b>EC2Node</b><br/>shutdown_semantics = Service<br/>socket: hosts"]
+    AG["<b>Agent</b><br/>shutdown_semantics = Service<br/>plug: deploys-onto<br/>socket: commands-on"]
+    SVC["<b>ServiceDocker</b><br/>shutdown_semantics = Service<br/>plug: commands-on<br/>socket: depends-on-service"]
+    CMD["<b>CommandDocker</b><br/>shutdown_semantics = Command<br/>plug: commands-on<br/>plug: depends-on-service<br/>(optional)"]
 
-    AG -- "Dedicated" --> EC2
-    SVC -- "Dedicated" --> AG
-    CMD -- "Dedicated" --> AG
-    CMD -. "Linear (optional)" .-> SVC
+    AG -- "Dedicated<br/>(deploys-onto ↔ hosts)" --> EC2
+    SVC -- "Dedicated<br/>(commands-on ↔ commands-on)" --> AG
+    CMD -- "Dedicated<br/>(commands-on ↔ commands-on)" --> AG
+    CMD -. "Linear<br/>(optional)" .-> SVC
 
     classDef infra fill:#e8f0ff,stroke:#3366aa,stroke-width:2px
     classDef agent fill:#fff4e0,stroke:#aa7733

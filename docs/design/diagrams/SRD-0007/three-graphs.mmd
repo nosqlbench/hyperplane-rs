@@ -1,17 +1,12 @@
 %% Copyright (c) Jonathan Shook
 %% SPDX-License-Identifier: Apache-2.0
-flowchart TB
-    subgraph Authored ["1. Element Graph (authored)"]
-        A["user writes in TestPlan<br/>nodes = Element structs<br/>edges = Dependency + RelationshipType<br/>axes attach here"]
-    end
-    subgraph Instance ["2. Element Instance Graph (compiler Stage 1)"]
-        B["reducto: axis expansion +<br/>binding-state +<br/>Dedicated propagation +<br/>Lifeline collapse<br/><br/>nodes = element instances<br/>(one per unique bound param set)"]
-    end
-    subgraph Atomic ["3. Atomic Step Graph (compiler Stage 2, SRD-0009)"]
-        C["reducto emits:<br/>Deploy, Await, SaveOutput,<br/>Teardown, Barrier<br/><br/>per-instance steps;<br/>what the executor runs"]
-    end
+%%{init: {'flowchart': {'nodeSpacing': 40, 'rankSpacing': 60}}}%%
+flowchart LR
+    A["<b>1. Element Graph</b><br/>(authored)<br/><br/>user writes in TestPlan<br/>nodes = Element structs<br/>edges = Dependency +<br/>  RelationshipType<br/>axes attach here"]
+    B["<b>2. Element Instance Graph</b><br/>(compiler Stage 1)<br/><br/>reducto:<br/>• axis expansion<br/>• binding-state<br/>• Dedicated propagation<br/>• Lifeline collapse<br/><br/>nodes = element instances<br/>(one per bound param set)"]
+    C["<b>3. Atomic Step Graph</b><br/>(compiler Stage 2, SRD-0009)<br/><br/>reducto emits:<br/>Deploy, Await, SaveOutput,<br/>Teardown, Barrier<br/><br/>per-instance steps;<br/>what the executor runs"]
 
-    Authored --> Instance --> Atomic
+    A --> B --> C
 
     classDef authored fill:#e8f0ff,stroke:#3366aa
     classDef derived fill:#fff4e0,stroke:#aa7733

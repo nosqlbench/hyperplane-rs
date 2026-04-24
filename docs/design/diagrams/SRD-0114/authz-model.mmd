@@ -1,28 +1,21 @@
 %% Copyright (c) Jonathan Shook
 %% SPDX-License-Identifier: Apache-2.0
-flowchart TB
-    P["principal<br/>(end-user / agent / system)"]
-    R["active roles<br/>(viewer / user / admin)"]
-    S["token scopes<br/>(fine-grain capability)"]
-    G["per-request<br/>authz gate"]
-    V["visibility check:<br/>ownership / workspace /<br/>resource_shares / public"]
+%%{init: {'flowchart': {'nodeSpacing': 50, 'rankSpacing': 70}}}%%
+flowchart LR
+    P["principal<br/>end-user / agent / system"]
+    R["active roles<br/>viewer / user / admin"]
+    S["token scopes<br/>fine-grain capabilities"]
+    G{{"authz gate<br/>BOTH must permit"}}
+    V{{"visibility check<br/>ownership / workspace /<br/>resource_shares / public"}}
     D["access decision"]
 
-    P --> R
-    P --> S
-    R --> G
-    S --> G
-    G --> V
-    V --> D
-
-    Note["both role AND scope must permit<br/>for access"]
-    G -.-> Note
+    P --> R --> G
+    P --> S --> G
+    G --> V --> D
 
     classDef p fill:#e8f0ff,stroke:#3366aa
     classDef gate fill:#fff4e0,stroke:#aa7733
     classDef final fill:#e8ffe8,stroke:#338833
-    classDef note fill:#f0f0f0,stroke:#666
     class P p
     class R,S,G,V gate
     class D final
-    class Note note

@@ -1,24 +1,28 @@
 %% Copyright (c) Jonathan Shook
 %% SPDX-License-Identifier: Apache-2.0
-flowchart TB
-    subgraph DB ["hyperplane.db (single SQLite file)"]
-        direction TB
-        subgraph PM ["Paramodel-owned (SRD-0012 traits)"]
-            PMT["studies, plans, executions, elements,<br/>parameters, checkpoints, journal_events,<br/>trials, trial_metrics, artifacts"]
-        end
-        subgraph BR ["Bridge tables (hyperplane-owned FK → paramodel)"]
-            BRT["trial_deployments (trials.id ↔ container_id)<br/>execution_nodes (executions.id ↔ nodes.id)"]
-        end
-        subgraph HP ["Hyperplane-owned"]
-            HPT["nodes, agents, deployments,<br/>provisioning, images, image_tag_cache,<br/>ssh_keys, config,<br/>users, groups, roles, api_tokens,<br/>workspaces, resource_shares,<br/>audit_events, system_events"]
-        end
-        PM -. "trait read" .-> BR
-        BR -. "FK" .-> HP
+%%{init: {'flowchart': {'nodeSpacing': 40, 'rankSpacing': 60}}}%%
+flowchart LR
+    subgraph PM ["Paramodel-owned (via SRD-0012 traits)"]
+        PMT["studies, plans, executions, elements<br/>parameters, checkpoints, journal_events<br/>trials, trial_metrics, artifacts"]
     end
+    subgraph BR ["Bridge tables (hyperplane-owned, FK into paramodel)"]
+        BRT["trial_deployments (trials.id ↔ container_id)<br/>execution_nodes (executions.id ↔ nodes.id)"]
+    end
+    subgraph HP ["Hyperplane-owned"]
+        HPT["nodes, agents, deployments, provisioning<br/>images, image_tag_cache, ssh_keys, config<br/>users, groups, roles, api_tokens<br/>workspaces, resource_shares<br/>audit_events, system_events"]
+    end
+
+    PMT -. "hyperplane reads via trait" .-> BRT
+    BRT -. "FK" .-> HPT
+
+    Note["all three tiers live in<br/>ONE SQLite file per deployment<br/>(INV-STATE-SINGLE-FILE)"]
+    HPT -.-> Note
 
     classDef paramodel fill:#e8f0ff,stroke:#3366aa
     classDef bridge fill:#fff4e0,stroke:#aa7733
     classDef hyperplane fill:#e8ffe8,stroke:#338833
+    classDef note fill:#f0f0f0,stroke:#666
     class PMT paramodel
     class BRT bridge
     class HPT hyperplane
+    class Note note

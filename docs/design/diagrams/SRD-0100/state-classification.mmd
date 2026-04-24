@@ -1,20 +1,21 @@
 %% Copyright (c) Jonathan Shook
 %% SPDX-License-Identifier: Apache-2.0
+%%{init: {'flowchart': {'nodeSpacing': 40, 'rankSpacing': 80}}}%%
 flowchart LR
     Q{{"Can this be rebuilt<br/>from the controller<br/>on demand?"}}
 
-    subgraph CtrlOnly ["Controller only (D2)"]
-        State["Persistent domain state<br/>• nodes, agents, plans, executions<br/>• checkpoints, journal, artifacts"]
-    end
+    State["<b>persistent domain state</b><br/>controller only (D2)<br/>• nodes, agents<br/>• plans, executions<br/>• checkpoints, journal<br/>• artifacts"]
 
-    subgraph Anywhere ["Allowed anywhere"]
-        Transient["Request-scoped transient<br/>• composition buffers<br/>• short-lived per-request caches"]
-        Creds["Credentials + prefs (D7)<br/>• CLI bearer token<br/>• agent auth-token<br/>• session cookies"]
-        Obs["Observations<br/>• event-stream fanout buffers<br/>• CLI completion caches"]
-    end
+    Transient["<b>request-scoped transient</b><br/>allowed anywhere<br/>• composition buffers<br/>• per-request caches"]
 
-    Q -- "no → it's state" --> State
-    Q -- "yes → it's observation" --> Obs
+    Creds["<b>credentials + prefs</b> (D7)<br/>allowed anywhere<br/>• CLI bearer token<br/>• agent auth-token<br/>• session cookies"]
+
+    Obs["<b>observations</b><br/>allowed anywhere<br/>• event-stream buffers<br/>• CLI completion caches"]
+
+    Q -- "no = state" --> State
+    Q -- "yes = observation" --> Obs
+    Q -.-> Transient
+    Q -.-> Creds
 
     classDef ctrl fill:#ffe8e8,stroke:#aa3333,stroke-width:2px
     classDef ok fill:#e8ffe8,stroke:#338833

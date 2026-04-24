@@ -1,35 +1,19 @@
 %% Copyright (c) Jonathan Shook
 %% SPDX-License-Identifier: Apache-2.0
-flowchart TB
-    subgraph T4 ["tier 4: applications"]
-        CTRL["hyperplane-controller"]
-        WEB["hyperplane-webconsole"]
-        CLI["hyperplane-cli"]
-    end
-    subgraph T3 ["tier 3: hyperplane-specific reusables"]
-        CORE["hyperplane-core<br/>hyperplane-dockerdefs<br/>hyperplane-persistence"]
-        PROTO["hyperplane-protocol<br/>hyperplane-elements-ec2"]
-    end
-    subgraph T2 ["tier 2: paramodel consumers"]
-        EXEC["paramodel-executor<br/>paramodel-compiler"]
-        TCK["paramodel-tck<br/>paramodel-mock"]
-    end
-    subgraph T1 ["tier 1: paramodel algebra"]
-        ELEM["paramodel-elements<br/>paramodel-trials<br/>paramodel-plan"]
-        PERS["paramodel-persistence"]
-    end
+%%{init: {'flowchart': {'nodeSpacing': 40, 'rankSpacing': 60}}}%%
+flowchart LR
+    T1["<b>tier 1</b><br/>paramodel algebra<br/><br/>paramodel-elements<br/>paramodel-trials<br/>paramodel-plan<br/>paramodel-persistence"]
+    T2["<b>tier 2</b><br/>paramodel consumers<br/><br/>paramodel-executor<br/>paramodel-compiler<br/>paramodel-tck<br/>paramodel-mock"]
+    T3["<b>tier 3</b><br/>hyperplane reusables<br/><br/>hyperplane-core<br/>hyperplane-dockerdefs<br/>hyperplane-persistence<br/>hyperplane-protocol<br/>hyperplane-elements-ec2"]
+    T4["<b>tier 4</b><br/>applications<br/><br/>hyperplane-controller<br/>hyperplane-webconsole<br/>hyperplane-cli"]
 
-    T4 --> T3
-    T4 --> T2
-    T3 --> T2
-    T3 --> T1
-    T2 --> T1
+    T4 --> T3 --> T2 --> T1
 
     classDef t1 fill:#e8ffe8,stroke:#338833
     classDef t2 fill:#fff4e0,stroke:#aa7733
     classDef t3 fill:#e8f0ff,stroke:#3366aa
     classDef t4 fill:#ffe8ff,stroke:#883388
-    class ELEM,PERS t1
-    class EXEC,TCK t2
-    class CORE,PROTO t3
-    class CTRL,WEB,CLI t4
+    class T1 t1
+    class T2 t2
+    class T3 t3
+    class T4 t4

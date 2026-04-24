@@ -1,35 +1,30 @@
 %% Copyright (c) Jonathan Shook
 %% SPDX-License-Identifier: Apache-2.0
-flowchart TB
-    subgraph Sources ["sources"]
-        AG["Agent"]
-        PM["Paramodel journal"]
-        CTRL["Controller<br/>(own acts)"]
-    end
+%%{init: {'flowchart': {'nodeSpacing': 40, 'rankSpacing': 60}}}%%
+flowchart LR
+    AG["Agent<br/>EventPush (WS)"]
+    PM["Paramodel journal<br/>JournalSubscriber<br/>bridge"]
+    CT["Controller<br/>(own acts)"]
 
-    subgraph Controller ["controller"]
-        ES["Event stream<br/>(unified)<br/>persists via EventStore trait"]
-    end
+    ES["Event stream<br/>(unified)<br/>persists via<br/>EventStore trait"]
 
-    subgraph Consumers ["consumers"]
-        WEB["Web server<br/>(SSE fanout)"]
-        CLI["CLI (tail)"]
-        SDK["SDK"]
-    end
+    WEB["Web server<br/>(SSE fanout)"]
+    CLI["CLI (tail)"]
+    SDK["SDK"]
+    BR["browsers"]
 
-    AG -- "EventPush (WS)" --> ES
-    PM -- "JournalSubscriber bridge" --> ES
-    CTRL -- "emit" --> ES
+    AG --> ES
+    PM --> ES
+    CT --> ES
 
-    ES -- "subscribe" --> WEB
-    ES -- "subscribe" --> CLI
-    ES -- "subscribe" --> SDK
-
-    WEB --> Browsers["browsers"]
+    ES -- subscribe --> WEB
+    ES -- subscribe --> CLI
+    ES -- subscribe --> SDK
+    WEB -- SSE --> BR
 
     classDef src fill:#fff4e0,stroke:#aa7733
     classDef ctrl fill:#e8f0ff,stroke:#3366aa
     classDef cons fill:#e8ffe8,stroke:#338833
-    class AG,PM,CTRL src
+    class AG,PM,CT src
     class ES ctrl
-    class WEB,CLI,SDK,Browsers cons
+    class WEB,CLI,SDK,BR cons

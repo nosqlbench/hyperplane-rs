@@ -1,16 +1,17 @@
 %% Copyright (c) Jonathan Shook
 %% SPDX-License-Identifier: Apache-2.0
-flowchart TB
-    S1["1. create data directory"]
-    S2["2. run migrations to current version<br/>(paramodel-store first, then<br/>hyperplane-store; consistency check)"]
-    S3["3. mint system API key<br/>→ credentials/system-api-key (0600)"]
-    S4["4. prompt for initial admin user<br/>→ username + password in users table"]
-    S5["5. mint bootstrap admin token (24h)<br/>→ print to stdout for hyper login"]
-    S6["6. emit SYSTEM_INITIALIZED event<br/>exit 0"]
+%%{init: {'flowchart': {'nodeSpacing': 30, 'rankSpacing': 40}}}%%
+flowchart LR
+    S1["1. create data<br/>directory"]
+    S2["2. run migrations<br/>paramodel-store first<br/>then hyperplane-store<br/>consistency check"]
+    S3["3. mint system<br/>API key<br/>(mode 0600)"]
+    S4["4. prompt for<br/>admin user<br/>(username + password)"]
+    S5["5. mint bootstrap<br/>admin token (24h)<br/>print for hyper login"]
+    S6["6. emit<br/>SYSTEM_INITIALIZED<br/>exit 0"]
 
     S1 --> S2 --> S3 --> S4 --> S5 --> S6
 
-    Note["re-running on an initialised install →<br/>AlreadyInitialized<br/>(destructive re-init requires<br/>deleting data directory first)"]
+    Note["re-running on initialised install →<br/>AlreadyInitialized<br/>(destructive re-init requires<br/>deleting data directory first)"]
     S6 -.-> Note
 
     classDef step fill:#e8f0ff,stroke:#3366aa

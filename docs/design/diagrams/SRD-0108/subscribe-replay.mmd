@@ -6,13 +6,12 @@ sequenceDiagram
     participant WS as WS /api/v1/events/subscribe
 
     Client->>WS: open WebSocket
-    Client->>WS: { since: 104700, filters: {...} }
+    Client->>WS: subscribe with since + filters
 
     rect rgb(240, 232, 255)
-        Note over Client,WS: replay (from retention)
+        Note over Client,WS: replay from retention
         WS-->>Client: event seq=104701
         WS-->>Client: event seq=104702
-        WS-->>Client: ...
         WS-->>Client: event seq=104836
     end
 
@@ -20,7 +19,7 @@ sequenceDiagram
         Note over Client,WS: live
         WS-->>Client: event seq=104837
         WS-->>Client: event seq=104838
-        WS-->>Client: ...
     end
 
-    Note over Client,WS: edge cases:<br/>since absent → start "now"<br/>since evicted → SinceOutOfRetention (4010)
+    Note over Client,WS: since absent starts now
+    Note over Client,WS: since evicted returns SinceOutOfRetention 4010

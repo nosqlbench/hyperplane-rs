@@ -1,11 +1,12 @@
 %% Copyright (c) Jonathan Shook
 %% SPDX-License-Identifier: Apache-2.0
 stateDiagram-v2
-    [*] --> pending_registration : mint (controller generates 32 bytes,<br/>delivers via SSH)
-    pending_registration --> registered : agent presents on WebSocket handshake,<br/>controller verifies hash
-    registered --> registered : agent reconnects<br/>(same token)
-    registered --> rotating : periodic (24h)<br/>or admin command
-    rotating --> registered : challenge/response<br/>new token issued
+    direction LR
+    [*] --> pending_registration : mint<br/>(CSPRNG,<br/>delivered via SSH)
+    pending_registration --> registered : handshake verified
+    registered --> registered : reconnect<br/>(same token)
+    registered --> rotating : periodic (24h)<br/>or admin
+    rotating --> registered : challenge response<br/>new token issued
     registered --> revoked : admin revokes
     rotating --> revoked : admin revokes
-    revoked --> [*] : WebSocket closed<br/>(code RevokedAuthToken)<br/>supervisor does not restart
+    revoked --> [*] : WebSocket closed<br/>(RevokedAuthToken)
