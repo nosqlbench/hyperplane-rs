@@ -65,6 +65,45 @@ Reducto produces an `ExecutionGraph` and an `ElementInstanceGraph`
 side by side. Both shapes are defined by SRD-0009; this SRD
 defines how they are built.
 
+## Pipeline at a glance
+
+```
+  input:  TestPlan + Element Graph                                     (SRD-0007/8)
+             │
+             ▼
+  ┌──────────────────────────────────────────────────────────────┐
+  │  Stage One — Trial enumeration + binding state               │
+  │    mixed-radix over axes → Vec<Trial>                        │
+  │    compute binding-state per element per trial               │
+  │    output: Element Instance Graph                            │
+  └───────────────┬──────────────────────────────────────────────┘
+                  ▼
+  ┌──────────────────────────────────────────────────────────────┐
+  │  Stage Two — Naive graph seeding                             │
+  │    for each element instance, emit naive step sequence       │
+  │    (Deploy / Await / SaveOutput / Teardown per shutdown_sem) │
+  └───────────────┬──────────────────────────────────────────────┘
+                  ▼
+  ┌──────────────────────────────────────────────────────────────┐
+  │  Stage Three — The 8 reducto rules                           │
+  │    R1: lifecycle expansion        R5: serialization barriers │
+  │    R2: relationship projection    R6: lifeline collapse      │
+  │    R3: group coalescing           R7: trial barriers         │
+  │    R4: dedicated propagation      R8: trial-element mark     │
+  └───────────────┬──────────────────────────────────────────────┘
+                  ▼
+  ┌──────────────────────────────────────────────────────────────┐
+  │  Stage Four — Graph linearisation                            │
+  │    topological orderings, metadata stamping                  │
+  └───────────────┬──────────────────────────────────────────────┘
+                  ▼
+  ExecutionPlan  (Atomic Step Graph; input to the executor — SRD-0011)
+```
+
+The compiler is *deterministic* — same TestPlan + element graph
+produces the same ExecutionPlan every time (fingerprint-stable
+per the invariants below).
+
 ## The Compiler surface
 
 ```rust

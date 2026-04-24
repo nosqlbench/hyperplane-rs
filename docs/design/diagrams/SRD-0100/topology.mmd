@@ -1,0 +1,28 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    Browser["Browser"]
+    Web["Web server<br/>(BFF, no state)"]
+    CLI["CLI"]
+    SDK["External SDK"]
+    Controller["Controller<br/>(sole writer)"]
+    Agents["Agents<br/>(one per node)"]
+    Store[("paramodel +<br/>hyperplane<br/>SQLite store")]
+    Docker["Docker daemon<br/>(node-local)"]
+
+    Browser -- "HTTPS + SSE" --> Web
+    Web -- "HTTPS<br/>(system API key +<br/>X-On-Behalf-Of)" --> Controller
+    CLI -- "HTTPS<br/>Bearer <token>" --> Controller
+    SDK -- "HTTPS<br/>Bearer <token>" --> Controller
+    Controller <-- "WSS<br/>(one per agent)" --> Agents
+    Controller --> Store
+    Agents -- "local IPC" --> Docker
+
+    classDef ctrl fill:#e8f0ff,stroke:#3366aa,stroke-width:2px
+    classDef browser fill:#fff4e0,stroke:#aa7733
+    classDef agent fill:#e8ffe8,stroke:#338833
+    classDef store fill:#f0f0f0,stroke:#666
+    class Controller ctrl
+    class Browser browser
+    class Agents agent
+    class Store,Docker store

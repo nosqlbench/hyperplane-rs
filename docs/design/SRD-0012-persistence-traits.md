@@ -93,6 +93,40 @@ Observations that shape the Rust design:
    the same store, so one can navigate from plan fingerprint →
    all executions of that plan.
 
+## Trait surface at a glance
+
+```
+  paramodel-persistence crate exposes six traits:
+
+  ┌────────────────────────────────────────────────────────────────┐
+  │                                                                │
+  │   MetadataStore     ─── studies, plans, elements, parameters   │
+  │                         (slowly-changing, authored content)    │
+  │                                                                │
+  │   ExecutionRepository ── live execution state snapshot         │
+  │                         (one row per active execution)         │
+  │                                                                │
+  │   CheckpointStore   ─── execution progress for resume          │
+  │                         (paused/interrupted → replay)          │
+  │                                                                │
+  │   JournalStore      ─── monotonic execution event log          │
+  │                         (every step transition)                │
+  │                                                                │
+  │   ResultStore       ─── trial outcomes + metric bindings       │
+  │                         (terminal state of completed trials)   │
+  │                                                                │
+  │   ArtifactStore     ─── captured blobs: logs, outputs, dumps   │
+  │                         (appendable, content-addressed)        │
+  │                                                                │
+  └────────────────────────────────────────────────────────────────┘
+
+  all six traits share one physical store per deployment (SRD-0101);
+  the reference impl is paramodel-store-sqlite (single file, WAL mode)
+
+  adopters (hyperplane) implement the trait via the implementation
+  crate; adopters do not re-invent the contract
+```
+
 ## Design
 
 All traits live in the `paramodel-persistence` crate (new).

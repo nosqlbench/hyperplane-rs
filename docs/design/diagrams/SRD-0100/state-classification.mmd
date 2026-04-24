@@ -1,0 +1,22 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart LR
+    Q{{"Can this be rebuilt<br/>from the controller<br/>on demand?"}}
+
+    subgraph CtrlOnly ["Controller only (D2)"]
+        State["Persistent domain state<br/>• nodes, agents, plans, executions<br/>• checkpoints, journal, artifacts"]
+    end
+
+    subgraph Anywhere ["Allowed anywhere"]
+        Transient["Request-scoped transient<br/>• composition buffers<br/>• short-lived per-request caches"]
+        Creds["Credentials + prefs (D7)<br/>• CLI bearer token<br/>• agent auth-token<br/>• session cookies"]
+        Obs["Observations<br/>• event-stream fanout buffers<br/>• CLI completion caches"]
+    end
+
+    Q -- "no → it's state" --> State
+    Q -- "yes → it's observation" --> Obs
+
+    classDef ctrl fill:#ffe8e8,stroke:#aa3333,stroke-width:2px
+    classDef ok fill:#e8ffe8,stroke:#338833
+    class State ctrl
+    class Transient,Creds,Obs ok

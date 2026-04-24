@@ -89,6 +89,37 @@ Observations:
    code (examples, docs) can depend on mocks without pulling in
    the test harness. We preserve that split.
 
+## TCK structure at a glance
+
+```
+  paramodel-tck  (opt-in crate; hidden behind a cargo feature)
+  │
+  ├── ImplementationProvider family
+  │   ParameterProvider, ElementProvider, TrialProvider,
+  │   PlanProvider, ExecutorProvider, StorageProvider
+  │   (one per domain; adopters compose what they need)
+  │
+  ├── Conformance cases
+  │   │   parameterised over the ImplementationProvider
+  │   │
+  │   ├── trait-level cases     (per trait: round-trip, errors, edge)
+  │   ├── invariant cases       (every INV-* code has a case)
+  │   └── scenario cases        (end-to-end multi-trait exercises)
+  │
+  └── Harness
+      wires an adopter's provider into the case battery
+      produces a pass/fail report per case per invariant
+
+  paramodel-mock (opt-in sibling)
+  │
+  └── in-memory reference implementations of every trait
+      (not a conformance target; a baseline fixture for TCK + docs)
+
+  adopters: hyperplane-store-sqlite, future backends
+  each adopter runs the TCK against their impl via their
+  own ImplementationProvider
+```
+
 ## Design
 
 ### Crate split

@@ -104,6 +104,38 @@ Shape observations that drive the Rust design:
    `Custom { name }` — the name dispatches to a registered custom
    ordering at compile time.
 
+## Plan structure at a glance
+
+```
+  TestPlan
+  │
+  ├── name, id, metadata
+  │
+  ├── elements: Vec<Element>      ← copies from Element Graph (SRD-0007)
+  │   │
+  │   └── each has parameters with Configuration (element-level defaults)
+  │
+  ├── axes: Vec<Axis>              ← parameter sweeps
+  │   │
+  │   └── Axis { name, target: (ElementName, ParameterName), values: Vec<Value> }
+  │
+  └── trial_policies: trial_timeout, retry, ordering
+
+
+  value resolution chain (first wins):
+
+    axis binding for this trial
+         │
+         ▼ else
+    element Configuration entry
+         │
+         ▼ else
+    parameter default
+         │
+         ▼ else
+    parameter required + unbound → compile error
+```
+
 ## Design
 
 All types live in the `paramodel-plan` crate (new). Dependencies:

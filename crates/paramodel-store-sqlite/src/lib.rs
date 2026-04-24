@@ -1,15 +1,30 @@
 // Copyright (c) Jonathan Shook
 // SPDX-License-Identifier: Apache-2.0
 
-//! Paramodel persistence — `SQLite` backend (placeholder).
+//! Paramodel persistence — SQLite backend.
 //!
-//! This crate reserves the `paramodel-store-sqlite` namespace on
-//! crates.io. v0.1 ships no concrete implementations — schema,
-//! migrations, and trait impls land in follow-up slices. When they
-//! do, each of the six [`paramodel_persistence`] traits will be
-//! implemented against a `SQLite` backend behind `SqliteStore`.
+//! [`SqliteStore`] implements every trait in
+//! [`paramodel_persistence`] against a single file- or memory-backed
+//! SQLite database. The schema favours JSON blobs for full domain
+//! objects plus dedicated columns for indexable filter fields (ids,
+//! fingerprints, status, timestamps). Callers typically construct
+//! one `SqliteStore` and share it as `Arc<SqliteStore>`.
 
-// Re-export the persistence-trait surface so adopters only need
-// `paramodel-store-sqlite` as a single dependency once the backend
-// is implemented.
+pub mod artifact_store;
+pub mod checkpoint_store;
+pub mod execution_repository;
+pub mod journal_store;
+pub mod journal_writer;
+pub mod metadata_store;
+pub mod providers;
+pub mod result_store;
+pub mod state_manager;
+pub mod store;
+
+pub use providers::{
+    SqliteArtifactStoreProvider, SqliteCheckpointStoreProvider,
+    SqliteExecutionRepositoryProvider, SqliteJournalStoreProvider,
+    SqliteMetadataStoreProvider, SqliteResultStoreProvider,
+};
+pub use store::SqliteStore;
 pub use paramodel_persistence as persistence;

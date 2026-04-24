@@ -108,6 +108,29 @@ Key shape observations:
    and extend the node type with the typed `Assignments` (per
    SRD-0006) the instance was bound with.
 
+## Step kinds at a glance
+
+```
+  AtomicStep (enum) — leaves of the execution graph
+
+  ┌─ Deploy   ── bring an element up (service: start; command: pull+run)
+  ├─ Await    ── block on a command's exit
+  ├─ SaveOutput ─ persist a command's result into Metrics
+  ├─ Teardown ── bring a service down (stop + remove)
+  └─ Barrier  ── synchronisation point (used by Rule 5)
+
+  per-trial sequence for a service+command pair:
+
+    Deploy(harness) ──▶ Deploy(client) ──▶ Await(client) ──▶ SaveOutput(client)
+                                                                    │
+                                                                    ▼
+                                                        Teardown(harness)
+
+  shutdown_semantics (SRD-0007) selects which tail reducto emits:
+    Service → Deploy + Teardown
+    Command → Deploy + Await + SaveOutput
+```
+
 ## Design
 
 All types live in the `paramodel-plan` crate (added in SRD-0008)

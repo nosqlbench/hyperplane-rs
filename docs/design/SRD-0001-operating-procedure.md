@@ -71,6 +71,27 @@ thread is resolved and the SRD body reflects the outcome, the thread is
 deleted. The SRD body should read as if the conversation never happened —
 git history is where the conversation lives.
 
+## SRD lifecycle at a glance
+
+```
+              ┌──────────────┐
+    idea ────▶│   Draft      │  open >> threads; exploratory spikes ok
+              └──────┬───────┘
+                     │  discuss, revise, resolve >> threads
+                     ▼
+              ┌──────────────┐
+              │  Accepted    │  code follows; referenced by later SRDs
+              └──────┬───────┘
+                     │  material change needed
+                     ▼
+              ┌──────────────┐
+              │  Superseded  │  new SRD written; old kept for history
+              └──────────────┘
+
+  small clarifications → edit in place + brief note at bottom
+  git history is authoritative
+```
+
 ## Draft vs accepted
 
 An SRD is either still being worked out or settled. While it's being worked

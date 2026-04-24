@@ -154,7 +154,7 @@ Its modules (as observed):
 | `hyperplane-webconsole` | Browser-facing reverse proxy + UI. Stateless. Only talks to the controller. |
 | `cloud-elements-ec2` | Concrete paramodel `Element` implementations for AWS EC2 nodes and Docker containers (`Ec2NodeElement`, `DockerContainerElement`, factories). |
 | `diagnostic-elements` | Diagnostic paramodel `Element` implementations (`DiagnosticElement`, type provider). |
-| `containerdefs/` | Not a Maven module. Holds Dockerfiles with `@param`/`@result` annotations and Docker labels (`com.hyperplane.api`, `com.hyperplane.mode`). These Dockerfiles are *the data* that drives dockerfile-derived parameter extraction. |
+| `containerdefs/` | Not a Maven module. Holds Dockerfiles with `@param`/`@result` annotations and Docker labels (`hyperplane_api`, `hyperplane_mode`). These Dockerfiles are *the data* that drives dockerfile-derived parameter extraction. |
 
 Key concept clusters within hyperplane:
 
@@ -379,8 +379,8 @@ element*.
   `DockerImageElement` (paramodel wrapper around a Dockerfile-derived
   ParamSpace), `SysconfigElement` (node profile schema), `DiagnosticElement`.
 - **Dockerfile `@param` / `@result` convention**: Dockerfiles are the source
-  of parameter schemas for container elements. Labels `com.hyperplane.api`
-  (required) and `com.hyperplane.mode` (service | command, required)
+  of parameter schemas for container elements. Labels `hyperplane_api`
+  (required) and `hyperplane_mode` (service | command, required)
   classify images.
 - **External `valueSource`**: `@param … valueSource=datasets` wires a
   parameter's valid values to a controller API endpoint
@@ -430,6 +430,31 @@ element*.
   controller.
 - **Auth**: User/pass login → session cookie for browser; bearer token for
   SDK/CLI; system API key for webconsole → controller proxy.
+
+## Dependency layering at a glance
+
+```
+  tier 4: applications
+    hyperplane-controller, hyperplane-webconsole, hyperplane-cli
+           ▲
+           │
+  tier 3: hyperplane-specific reusables
+    hyperplane-core, hyperplane-dockerdefs, hyperplane-persistence,
+    hyperplane-protocol, hyperplane-elements-ec2
+           ▲
+           │
+  tier 2: paramodel consumers
+    paramodel-executor, paramodel-compiler, paramodel-tck, paramodel-mock
+           ▲
+           │
+  tier 1: paramodel algebra
+    paramodel-elements, paramodel-trials, paramodel-plan,
+    paramodel-persistence
+
+  dependencies flow strictly upward — tier 1 never depends on tier 2+.
+  hyperplane tier only depends on paramodel tier; reverse is forbidden
+  (INV-STATE-PARAMODEL-FIRST, SRD-0101).
+```
 
 ## 5. Proposed workspace layout (crate inventory)
 
@@ -863,7 +888,7 @@ level.
 12. Hyperplane element types (node / service / command descriptors;
     type provider; concrete EC2 and Docker elements; diagnostic elements).
 13. Dockerfile param extraction (`@param`, `@result`, labels
-    `com.hyperplane.api` and `.mode`, `valueSource` binding). (Pins R22.)
+    `hyperplane_api` and `hyperplane_mode`, `valueSource` binding). (Pins R22.)
 14. SQLite state store (schema management, connection pool, backing all
     paramodel persistence traits plus the operational tracker data).
     (Pins R11.)

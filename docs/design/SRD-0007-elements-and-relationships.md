@@ -107,6 +107,41 @@ Shape observations that drive the Rust design:
    artifacts. They're out of scope here and will land in the
    compilation SRD (Phase 1 item 8).
 
+## The three graphs at a glance
+
+```
+  1. Element Graph (authored)
+  ─────────────────────────────
+                                      user writes this in the TestPlan
+     ┌──────┐                          nodes  = Element structs
+     │ host │◀──┐                      edges  = Dependency records
+     └──────┘   │ Dedicated            relationships = RelationshipType enum
+                │                      axes attach here
+          ┌─────┴────┐
+          │ harness  │◀──┐
+          └──────────┘   │ Linear
+                         │
+                  ┌──────┴──┐
+                  │ client  │
+                  └─────────┘
+
+  2. Element Instance Graph (compiler Stage 1)
+  ───────────────────────────────────────────
+  reducto expands axes + binding-state + Dedicated propagation
+  + Lifeline collapse. Nodes = element instances (one per unique
+  bound parameter set). Edges = instance-to-instance.
+
+  3. Atomic Step Graph (compiler Stage 2, SRD-0009)
+  ────────────────────────────────────────────────
+  reducto emits Deploy / Await / SaveOutput / Teardown / Barrier
+  steps per instance. This is what the executor runs.
+
+  invariants:
+    authored graph ─ user-editable
+    instance graph ─ derived; visualised in UIs for inspection
+    atomic graph   ── what actually executes
+```
+
 ## Design
 
 All of the following lives in the `paramodel-elements` crate. This

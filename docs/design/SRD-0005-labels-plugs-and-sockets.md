@@ -165,6 +165,38 @@ The `Labeled` and `Tagged` tiers are preserved as `Labels` and
 `Tags`, keeping the fact/organisation distinction from upstream.
 The namespace-uniqueness rule across all three tiers is preserved.
 
+## Attribute kinds at a glance
+
+```
+  every element carries four attribute categories:
+
+  ┌─ Labels ───────────────────────────────────────────────┐
+  │  intrinsic facts       BTreeMap<LabelKey, LabelValue>  │
+  │  (type, mode, arch...) compile-time-meaningful         │
+  └────────────────────────────────────────────────────────┘
+
+  ┌─ Tags ─────────────────────────────────────────────────┐
+  │  organisational        BTreeSet<Tag>                   │
+  │  (team:infra, ...)     UI/filter surface; no semantics │
+  └────────────────────────────────────────────────────────┘
+
+  ┌─ Plugs ────────────────────────────────────────────────┐
+  │  outgoing edges        BTreeMap<PlugName, Plug>        │
+  │  ("I depend on ...")   consumed by matching Socket     │
+  └────────────────────────────────────────────────────────┘
+
+  ┌─ Sockets ──────────────────────────────────────────────┐
+  │  incoming edges        BTreeMap<SocketName, Socket>    │
+  │  ("... depends on me") offered to matching Plug        │
+  └────────────────────────────────────────────────────────┘
+
+  plug/socket compatibility at plan-compile time:
+    plug.name == socket.name   AND
+    plug.accepts ⊇ socket.provides   AND
+    relationship_type ∈ socket.allowed
+    → a Wire exists between the two elements
+```
+
 ## Design
 
 All of the following lives in the `paramodel-elements::attributes`

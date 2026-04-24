@@ -117,6 +117,46 @@ Shape observations:
    we have one async API; synchronous callers block on it from
    a blocking-pool handle.
 
+## Execution model at a glance
+
+```
+  ExecutionPlan (from compiler)
+         │
+         ▼
+  ┌────────────────────────────────────────────────────────┐
+  │   Executor                                             │
+  │                                                        │
+  │   ┌────────────┐    ┌────────────┐    ┌────────────┐  │
+  │   │ Scheduler  │───▶│  Runtime   │───▶│ Observer   │  │
+  │   │ picks next │    │ invokes    │    │ emits      │  │
+  │   │ ready step │    │ ElementRT  │    │ Journal    │  │
+  │   └─────┬──────┘    │ hooks      │    │ events     │  │
+  │         │           └─────┬──────┘    └────────────┘  │
+  │         │                 │                            │
+  │         │                 ▼                            │
+  │         │      ┌──────────────────┐                    │
+  │         │      │ ElementRuntime   │── implementations  │
+  │         │      │ (per Kind)       │   live in hyperplane
+  │         │      └──────────────────┘                    │
+  │         │                                              │
+  │         ▼                                              │
+  │   ┌─────────────────┐                                  │
+  │   │ Checkpoint      │── persists progress for resume   │
+  │   │ Store (SRD-0012)│                                  │
+  │   └─────────────────┘                                  │
+  └────────────────────────────────────────────────────────┘
+         │
+         ▼
+  ExecutionResults (trials + outcomes + metrics)
+```
+
+Scheduler + Runtime are separate concerns:
+ - Scheduler answers "which step next?" (topological + resource-aware)
+ - Runtime answers "how to run this step?" (via ElementRuntime trait)
+
+The `Observer` tees every transition into the journal stream that
+downstream systems (hyperplane's event stream, SRD-0111) subscribe to.
+
 ## Design
 
 All traits live in the `paramodel-executor` crate (new).

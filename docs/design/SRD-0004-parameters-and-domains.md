@@ -91,6 +91,25 @@ Key observations from the source beyond the docs:
   the Javadoc says "immutable after creation." We take the immutable
   spec at face value.
 
+## Parameter algebra at a glance
+
+```
+  Parameter (enum)
+  │
+  ├── Integer   ── IntegerDomain   + IntConstraint[]   + default: i64
+  ├── Double    ── DoubleDomain    + DoubleConstraint[]+ default: f64
+  ├── Boolean   ── BooleanDomain                       + default: bool
+  ├── String    ── StringDomain    + StringConstraint[]+ default: String
+  ├── Selection ── SelectionDomain                     + default: String
+  └── Derived   ── expression bound to other parameters
+
+  every non-Derived carries: name, domain, constraints, default,
+                             Labels (intrinsic), Tags (organisational)
+
+  validation:  value → in domain? → passes constraints? → ok
+  resolution:  axis binding > element config > parameter default
+```
+
 ## Design
 
 All of the following lives in the `paramodel-elements` crate. Per SRD-0003

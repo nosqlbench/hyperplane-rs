@@ -114,6 +114,31 @@ Observations from the source that shape this SRD:
   `Vec<Trial>` storage is labelled as authoring/enumeration order
   only (D5).
 
+## Trial model at a glance
+
+```
+  TestPlan authoring                    Compiler (SRD-0010)
+       │                                     │
+       │ axes: 2 dims × 3 values             │ mixed-radix enumeration
+       │ (e.g. dataset ∈ {small, med, big}   │ + binding-state
+       │  concurrency ∈ {1, 10})             │
+       │                                     ▼
+       └────────────▶ 6 trials (2 × 3 cartesian)
+                      ┌──────────────────────────┐
+                      │ Trial { id, assignments, │
+                      │         labels, tags }   │
+                      └──────────────────────────┘
+
+  Assignments: element_name → parameter_name → Value
+      client.dataset     = "small"
+      client.concurrency = 1
+      harness.version    = "1.0"    (not on an axis; config)
+
+  TrialSet collects all trials for one execution. Paramodel
+  preserves identity across: authoring (expected set), execution
+  (running set), results (completed set).
+```
+
 ## Design
 
 All types live in the `paramodel-trials` crate. The crate depends
