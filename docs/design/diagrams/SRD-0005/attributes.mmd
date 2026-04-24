@@ -1,0 +1,11 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    E["Element"]
+    E --> L["Labels<br/>intrinsic facts<br/>BTreeMap&lt;LabelKey, LabelValue&gt;<br/>compile-time meaningful"]
+    E --> T["Tags<br/>organisational<br/>BTreeSet&lt;Tag&gt;<br/>UI/filter; no semantics"]
+    E --> P["Plugs<br/>outgoing edges<br/>BTreeMap&lt;PlugName, Plug&gt;<br/>consumed by matching Socket"]
+    E --> S["Sockets<br/>incoming edges<br/>BTreeMap&lt;SocketName, Socket&gt;<br/>offered to matching Plug"]
+
+    classDef attr fill:#e8f0ff,stroke:#3366aa
+    class L,T,P,S attr

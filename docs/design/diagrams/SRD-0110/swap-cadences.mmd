@@ -1,0 +1,26 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    subgraph Full ["Full-page swap"]
+        F["trigger: link navigation<br/>hx-boost='true'<br/>server returns complete page"]
+    end
+
+    subgraph Panel ["Panel swap (on-demand)"]
+        P["trigger: user action<br/>(refresh, filter, expand)<br/>hx-get='/path/to/panel'<br/>server returns HTML fragment"]
+    end
+
+    subgraph Live ["Live swap (push-driven)"]
+        L["trigger: backend state change<br/>hx-ext='sse' + sse-connect + sse-swap<br/>server pushes HTML fragments over SSE<br/><br/>fallback: hx-trigger='every Ns'<br/>deferred: hx-ext='ws'"]
+    end
+
+    Note["convention: every live-swap target has a stable id<br/>matching the server's SSE event name"]
+    Live -.-> Note
+
+    classDef full fill:#e8f0ff,stroke:#3366aa
+    classDef panel fill:#fff4e0,stroke:#aa7733
+    classDef live fill:#e8ffe8,stroke:#338833
+    classDef conv fill:#f0f0f0,stroke:#666
+    class F full
+    class P panel
+    class L live
+    class Note conv

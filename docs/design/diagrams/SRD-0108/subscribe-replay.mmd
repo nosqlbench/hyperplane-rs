@@ -1,0 +1,26 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+sequenceDiagram
+    autonumber
+    participant Client
+    participant WS as WS /api/v1/events/subscribe
+
+    Client->>WS: open WebSocket
+    Client->>WS: { since: 104700, filters: {...} }
+
+    rect rgb(240, 232, 255)
+        Note over Client,WS: replay (from retention)
+        WS-->>Client: event seq=104701
+        WS-->>Client: event seq=104702
+        WS-->>Client: ...
+        WS-->>Client: event seq=104836
+    end
+
+    rect rgb(232, 255, 232)
+        Note over Client,WS: live
+        WS-->>Client: event seq=104837
+        WS-->>Client: event seq=104838
+        WS-->>Client: ...
+    end
+
+    Note over Client,WS: edge cases:<br/>since absent → start "now"<br/>since evicted → SinceOutOfRetention (4010)

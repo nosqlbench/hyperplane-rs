@@ -1,0 +1,37 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart LR
+    subgraph Container ["Container writes"]
+        SO["stdout (stream)"]
+        SE["stderr (stream)"]
+        FL["files in<br/>output volume"]
+        RP["result_parameters.json"]
+        EC["exit code"]
+    end
+
+    subgraph Agent ["Agent captures"]
+        T1["tee to stdout.log"]
+        T2["tee to stderr.log"]
+        T3["read on exit"]
+        T4["parse on exit"]
+        T5["capture on exit"]
+        T1L["live LogChunk"]
+        T2L["live LogChunk"]
+    end
+
+    subgraph Paramodel ["Paramodel stores"]
+        A1["artifact (appendable)"]
+        A2["artifact (appendable)"]
+        A3["artifacts (one each)"]
+        A4["TrialMetrics<br/>via ResultStore"]
+        A5["StepOutcome"]
+        EV["event stream"]
+    end
+
+    SO --> T1 --> A1
+    SO --> T1L --> EV
+    SE --> T2 --> A2
+    SE --> T2L --> EV
+    FL --> T3 --> A3
+    RP --> T4 --> A4
+    EC --> T5 --> A5

@@ -1,0 +1,11 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart LR
+    DEP["Deploy<br/>docker pull + docker run<br/>(foreground; agent attached)<br/>stdout/stderr teed to files"]
+    AW["Await<br/>read exit_code<br/>(0 → ok, non-zero → Failed)"]
+    SO["SaveOutput<br/>result_parameters<br/>→ TrialMetrics"]
+
+    DEP --> AW --> SO
+
+    classDef cmd fill:#fff4e0,stroke:#aa7733
+    class DEP,AW,SO cmd

@@ -1,0 +1,36 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    PM["paramodel state machine<br/>(drives)"]
+    PM --> NL["hyperplane node lifecycle<br/>(SRD-0104)"]
+    PM --> AL["hyperplane agent lifecycle<br/>(SRD-0105)"]
+    PM --> CS["hyperplane container state<br/>(SRD-0106 / 0107)"]
+
+    NL -.-> EV["event stream (SRD-0111)"]
+    AL -.-> EV
+    CS -.-> EV
+
+    subgraph Observe ["end-user observes via"]
+        OB1["CLI (SRD-0109):<br/>tail events, query results"]
+        OB2["Web UI (SRD-0110):<br/>topology + execution detail"]
+        OB3["SDK (SRD-0108):<br/>programmatic queries"]
+    end
+
+    EV --> OB1
+    EV --> OB2
+    EV --> OB3
+
+    subgraph Authz ["authz gates everything"]
+        AZ1["principal (SRD-0114):<br/>who is requesting?"]
+        AZ2["token scope:<br/>what may they do?"]
+        AZ3["resource_shares:<br/>what may they see?"]
+    end
+
+    classDef core fill:#e8f0ff,stroke:#3366aa
+    classDef event fill:#fff4e0,stroke:#aa7733
+    classDef obs fill:#e8ffe8,stroke:#338833
+    classDef az fill:#ffe8e8,stroke:#aa3333
+    class PM,NL,AL,CS core
+    class EV event
+    class OB1,OB2,OB3 obs
+    class AZ1,AZ2,AZ3 az

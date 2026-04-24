@@ -1,0 +1,31 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+sequenceDiagram
+    autonumber
+    participant C as Controller
+    participant AWS as AWS EC2
+    participant N as Node
+    participant A as Agent
+
+    C->>AWS: RunInstances
+    AWS-->>C: instance-id + pending
+    Note over C: node row: PROVISIONING
+
+    loop every 5s
+        C->>AWS: DescribeInstances
+    end
+    AWS-->>C: running
+    Note over C: PROVISIONED
+
+    AWS-->>N: (instance boots)
+    N->>C: Vector: cloud-init logs (WebSocket)
+    Note over C: CONFIGURING → CONFIGURED
+
+    C->>N: SSH: scp agent, write config,<br/>enable systemd unit
+    Note over C: DEPLOYING → DEPLOYED
+
+    N->>A: systemd starts agent
+    A->>C: WebSocket open + Register
+    Note over C: REGISTERING → REGISTERED
+    A->>C: Heartbeat
+    Note over C: ACTIVE_HEARTBEAT<br/>materialize returns outputs

@@ -1,0 +1,26 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart LR
+    subgraph Start ["start"]
+        S1["1. migrations run"]
+        S2["2. start controller"]
+        S3["3. wait /api/v1/health"]
+        S4["4. start web"]
+        S5["5. wait web health"]
+        S6["6. start registry<br/>(if co-resident)"]
+        S7["7. SYSTEM_STARTED event"]
+        S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7
+    end
+
+    subgraph Stop ["stop (reverse)"]
+        T1["1. stop registry"]
+        T2["2. stop web<br/>(drain 30s)"]
+        T3["3. stop controller<br/>(drain 30s)"]
+        T4["4. SYSTEM_STOPPED event"]
+        T1 --> T2 --> T3 --> T4
+    end
+
+    classDef start fill:#e8ffe8,stroke:#338833
+    classDef stop fill:#ffe8e8,stroke:#aa3333
+    class S1,S2,S3,S4,S5,S6,S7 start
+    class T1,T2,T3,T4 stop

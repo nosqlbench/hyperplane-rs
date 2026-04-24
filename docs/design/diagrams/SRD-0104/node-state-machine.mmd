@@ -1,0 +1,33 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+stateDiagram-v2
+    [*] --> PROVISIONING
+    PROVISIONING --> PROVISIONED : AWS running
+    PROVISIONING --> TERMINATED : AWS terminated
+    PROVISIONED --> CONFIGURING : cloud-init starts
+    CONFIGURING --> CONFIGURED : cloud-init done
+    CONFIGURING --> CONFIGURING_FAILED : cloud-init error
+    CONFIGURING_FAILED --> CONFIGURING : retry
+    CONFIGURED --> DEPLOYING : SSH deploy initiated
+    DEPLOYING --> DEPLOYED : agent binary installed
+    DEPLOYING --> DEPLOYING_FAILED : SSH/install error
+    DEPLOYING_FAILED --> DEPLOYING : retry
+    DEPLOYED --> REGISTERING : WebSocket open
+    REGISTERING --> REGISTERED : Register validated
+    REGISTERING --> REGISTERING_FAILED : timeout
+    REGISTERING_FAILED --> REGISTERING : retry
+    REGISTERED --> ACTIVE_HEARTBEAT : first heartbeat
+    ACTIVE_HEARTBEAT --> AWAITING_HEARTBEAT : heartbeat due
+    AWAITING_HEARTBEAT --> ACTIVE_HEARTBEAT : heartbeat received
+    ACTIVE_HEARTBEAT --> LOST_HEARTBEAT : 30s silence
+    AWAITING_HEARTBEAT --> LOST_HEARTBEAT : 30s silence
+    LOST_HEARTBEAT --> REGISTERING : agent reconnects
+    LOST_HEARTBEAT --> ACTIVE_HEARTBEAT : heartbeat received
+    PROVISIONING --> TERMINATED
+    CONFIGURING --> TERMINATED
+    DEPLOYING --> TERMINATED
+    REGISTERING --> TERMINATED
+    REGISTERED --> TERMINATED
+    ACTIVE_HEARTBEAT --> TERMINATED
+    LOST_HEARTBEAT --> TERMINATED
+    TERMINATED --> [*]

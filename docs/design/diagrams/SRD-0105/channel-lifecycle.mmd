@@ -1,0 +1,35 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+sequenceDiagram
+    autonumber
+    participant C as Controller
+    participant N as Node
+    participant A as Agent
+
+    rect rgb(230, 240, 255)
+        Note over C,N: Phase 1 — SSH deploy (ONE-SHOT)
+        C->>N: open SSH
+        C->>N: scp agent binary
+        C->>N: write config file (auth-token)
+        C->>N: systemd enable --now
+        C->>N: close SSH
+    end
+
+    rect rgb(232, 255, 232)
+        Note over C,A: Phase 2 — WebSocket (LONG-LIVED)
+        N->>A: agent starts, reads config
+        A->>C: open WSS (Authorization: Bearer auth-token)
+        A->>C: Register
+        C-->>A: Register ack
+        loop every 10s
+            A->>C: Heartbeat
+        end
+        A->>C: EventPush (docker events)
+        A->>C: LogChunk
+        C->>A: CommandRequest (declarative)
+        A-->>C: CommandResponse
+        C->>A: TokenRefresh (periodic)
+        A-->>C: TokenRefreshAck
+        C->>A: Shutdown (node teardown)
+        Note over A: agent shuts down the node
+    end

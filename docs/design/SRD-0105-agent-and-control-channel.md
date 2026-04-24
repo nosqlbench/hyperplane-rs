@@ -81,39 +81,7 @@ and the recovery rules.
 
 ## Channel lifecycle at a glance
 
-```
-  Phase 1: SSH deploy (ONE-SHOT)                Phase 2: WebSocket (LONG-LIVED)
-  ──────────────────────────────                ────────────────────────────────
-
-  Controller          Node                      Controller          Agent
-      │                 │                           │                 │
-      │─ open SSH ──────▶                           │                 │
-      │                 │                           │                 │
-      │─ scp binary ───▶│                           │                 │
-      │─ write config ─▶│                           │                 │
-      │─ systemd start ▶│                           │                 │
-      │                 │                           │                 │
-      │── close SSH ────▶                           │                 │
-      │                 │                           │                 │
-      │             (agent starts)                  │                 │
-      │             (reads config)                  │                 │
-      │             (opens WSS) ────────────────────▶                 │
-      │                                             │◀── Register ────│
-      │                                             │─── Register ack─▶
-      │                                             │                 │
-      │                                             │◀── Heartbeat ───│  every 10s
-      │                                             │                 │
-      │                                             │── CommandReq ──▶│  (declarative)
-      │                                             │◀── CommandResp──│
-      │                                             │◀── EventPush ───│  (docker events)
-      │                                             │◀── LogChunk ────│
-      │                                             │                 │
-      │                                             │── TokenRefresh ▶│  periodic
-      │                                             │◀── ack ─────────│
-      │                                             │                 │
-      │                                             │── Shutdown ────▶│  (node teardown)
-      │                                                       (agent shuts down node)
-```
+![Two-phase channel lifecycle: Phase 1 is a one-shot SSH deploy (scp the agent binary, write config with auth-token, enable systemd, close SSH); Phase 2 is a long-lived WebSocket (agent opens WSS with the auth-token, Registers, then heartbeats every 10s and exchanges CommandRequest/CommandResponse, EventPush, LogChunk, TokenRefresh; Shutdown terminates the node and the agent dies with it).](diagrams/SRD-0105/channel-lifecycle.png)
 
 SSH is used exactly once (`INV-AGENT-SSH-ONCE`). Everything
 after deploy rides the single WebSocket (`INV-CTL-AGENT-CHANNEL`).
@@ -256,31 +224,7 @@ exists only in transit (SSH deploy, WebSocket handshake, rotation
 message) and in the agent's `agent.toml`. The controller stores
 only the hash.
 
-```
-  auth-token lifecycle:
-
-    (mint) ──▶ ┌──────────────────┐
-               │  pending-register│  in agents table
-               └────────┬─────────┘
-                        │ agent presents token on
-                        │ WebSocket upgrade
-                        ▼
-               ┌──────────────────┐
-               │   registered     │◀──────┐
-               └────────┬─────────┘       │ (agent reconnects
-                        │                 │  with same token)
-                        │ periodic (24h)  │
-                        ▼                 │
-               ┌──────────────────┐       │
-               │   rotating       │       │
-               │ (challenge/resp) │───────┘
-               └────────┬─────────┘
-                        │ admin revokes
-                        ▼
-               ┌──────────────────┐
-               │    revoked       │  close code RevokedAuthToken
-               └──────────────────┘  supervisor does not restart
-```
+![auth-token state diagram: pending_registration (after mint + SSH delivery) → registered (on WebSocket handshake verification); registered loops on reconnects with the same token; periodic rotation enters rotating and returns to registered with a new token via challenge/response; admin revoke from registered or rotating transitions to revoked and terminates.](diagrams/SRD-0105/token-lifecycle.png)
 
 ## D4 — WebSocket wire format
 

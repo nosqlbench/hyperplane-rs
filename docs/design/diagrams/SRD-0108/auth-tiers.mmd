@@ -1,0 +1,28 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart LR
+    CLI["CLI"]
+    SDK["SDK"]
+    Web["Web server"]
+    Agent["Agent"]
+
+    subgraph CTRL ["Controller"]
+        direction TB
+        API["/api/v1/*"]
+        AWS["/agent/ws"]
+    end
+
+    CLI -- "Bearer &lt;token&gt;<br/>(end-user principal)" --> API
+    SDK -- "Bearer &lt;token&gt;<br/>(end-user principal)" --> API
+    Web -- "Bearer &lt;system-api-key&gt; +<br/>X-On-Behalf-Of<br/>(impersonated end-user)" --> API
+    Agent -- "auth-token<br/>(WebSocket handshake)<br/>(agent principal)" --> AWS
+
+    Note["INV-API-SINGLE-CRED<br/>INV-PRINCIPAL-AT-BOUNDARY"]
+    CTRL -.-> Note
+
+    classDef client fill:#e8f0ff,stroke:#3366aa
+    classDef ctrl fill:#fff4e0,stroke:#aa7733
+    classDef inv fill:#f0f0f0,stroke:#666
+    class CLI,SDK,Web,Agent client
+    class API,AWS ctrl
+    class Note inv

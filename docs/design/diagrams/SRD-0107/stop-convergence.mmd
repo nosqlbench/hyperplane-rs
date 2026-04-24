@@ -1,0 +1,31 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    T1["element.timeout<br/>expires"]
+    T2["plan trial_timeout"]
+    T3["executor cancel"]
+    T4["dematerialize called"]
+
+    Stop["stop-and-capture"]
+    T1 --> Stop
+    T2 --> Stop
+    T3 --> Stop
+    T4 --> Stop
+
+    Stop --> SIG["SIGTERM<br/>(grace 10s)"]
+    SIG --> Q{{"container exited?"}}
+    Q -- "yes" --> Capture
+    Q -- "no" --> KILL["SIGKILL"]
+    KILL --> Capture
+
+    Capture["capture files<br/>upload artifacts<br/>(partial results are valid)"]
+    Capture --> Outcome{{"which trigger?"}}
+    Outcome -- "timeout" --> Failed1["StepOutcome = Failed{TimedOut}"]
+    Outcome -- "cancel" --> Cancelled["StepOutcome = Cancelled"]
+
+    classDef trigger fill:#ffe8e8,stroke:#aa3333
+    classDef step fill:#fff4e0,stroke:#aa7733
+    classDef final fill:#e8f0ff,stroke:#3366aa
+    class T1,T2,T3,T4 trigger
+    class SIG,KILL,Capture step
+    class Failed1,Cancelled final

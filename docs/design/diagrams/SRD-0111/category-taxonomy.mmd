@@ -1,0 +1,17 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    Cat["EventCategory"]
+    Cat --> L["LIFECYCLE<br/>NODE_ADDED, NODE_STATUS_CHANGED,<br/>EXECUTION_STARTED, TRIAL_COMPLETED,<br/>SYSTEM_STARTED, SYSTEM_STOPPED"]
+    Cat --> T["TOPOLOGY<br/>AGENT_CONNECTED, AGENT_DISCONNECTED,<br/>CONTAINER_ADDED, CONTAINER_REMOVED,<br/>CONTAINER_STATUS_CHANGED"]
+    Cat --> Co["CONFIGURATION<br/>CONFIG_CHANGED, IMAGE_REGISTERED,<br/>TOKEN_ROTATED, USER_CREATED"]
+    Cat --> Op["OPERATION<br/>LOG_APPENDED, METRIC_SAMPLE,<br/>RESOURCE_HEARTBEAT, STEP_PROGRESS,<br/>STEP_STARTED, STEP_COMPLETED"]
+    Cat --> S["SECURITY<br/>LOGIN_SUCCEEDED, LOGIN_FAILED,<br/>PERMISSION_DENIED, IMPERSONATION,<br/>TOKEN_REVOKED"]
+
+    Note["severity modulates: TRACE &lt; DEBUG &lt; INFO &lt; WARN &lt; ERROR<br/>filter composes: category ∈ {...} AND severity ≥ N"]
+    Cat -.-> Note
+
+    classDef cat fill:#e8f0ff,stroke:#3366aa
+    classDef note fill:#f0f0f0,stroke:#666
+    class L,T,Co,Op,S cat
+    class Note note

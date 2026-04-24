@@ -167,35 +167,14 @@ The namespace-uniqueness rule across all three tiers is preserved.
 
 ## Attribute kinds at a glance
 
-```
-  every element carries four attribute categories:
+Every element carries four attribute categories — Labels, Tags,
+Plugs, and Sockets:
 
-  ┌─ Labels ───────────────────────────────────────────────┐
-  │  intrinsic facts       BTreeMap<LabelKey, LabelValue>  │
-  │  (type, mode, arch...) compile-time-meaningful         │
-  └────────────────────────────────────────────────────────┘
+![Element attributes: Labels (intrinsic facts, compile-time meaningful), Tags (organisational, no semantics), Plugs (outgoing edges consumed by matching Sockets), Sockets (incoming edges offered to matching Plugs).](diagrams/SRD-0005/attributes.png)
 
-  ┌─ Tags ─────────────────────────────────────────────────┐
-  │  organisational        BTreeSet<Tag>                   │
-  │  (team:infra, ...)     UI/filter surface; no semantics │
-  └────────────────────────────────────────────────────────┘
+Plug/socket compatibility at plan-compile time:
 
-  ┌─ Plugs ────────────────────────────────────────────────┐
-  │  outgoing edges        BTreeMap<PlugName, Plug>        │
-  │  ("I depend on ...")   consumed by matching Socket     │
-  └────────────────────────────────────────────────────────┘
-
-  ┌─ Sockets ──────────────────────────────────────────────┐
-  │  incoming edges        BTreeMap<SocketName, Socket>    │
-  │  ("... depends on me") offered to matching Plug        │
-  └────────────────────────────────────────────────────────┘
-
-  plug/socket compatibility at plan-compile time:
-    plug.name == socket.name   AND
-    plug.accepts ⊇ socket.provides   AND
-    relationship_type ∈ socket.allowed
-    → a Wire exists between the two elements
-```
+![Wire compatibility check: a Plug on Element A meets a Socket on Element B; the compiler tests plug.name == socket.name, plug.accepts ⊇ socket.provides, and relationship_type ∈ socket.allowed. All three pass → a Wire; any fails → compile error PlugSocketMismatch.](diagrams/SRD-0005/wire-compatibility.png)
 
 ## Design
 

@@ -1,0 +1,23 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+sequenceDiagram
+    autonumber
+    participant E as Executor
+    participant C as Controller
+    participant A as Agent
+    participant D as Docker daemon
+
+    E->>C: Deploy (atomic step)
+    Note over C: resolve image digest<br/>build ContainerSpec
+    C->>A: EnsureContainerRunning
+    A->>D: docker pull
+    D-->>A: image ready
+    A->>D: docker run -d
+    D-->>A: container_id
+    A->>D: start log tail
+    D-->>A: stdout chunks
+    A->>C: LogChunk
+    D-->>A: health event
+    A->>C: EventPush (healthy)
+    A->>C: CommandResponse: ok
+    C->>E: materialize outputs

@@ -433,28 +433,11 @@ element*.
 
 ## Dependency layering at a glance
 
-```
-  tier 4: applications
-    hyperplane-controller, hyperplane-webconsole, hyperplane-cli
-           ▲
-           │
-  tier 3: hyperplane-specific reusables
-    hyperplane-core, hyperplane-dockerdefs, hyperplane-persistence,
-    hyperplane-protocol, hyperplane-elements-ec2
-           ▲
-           │
-  tier 2: paramodel consumers
-    paramodel-executor, paramodel-compiler, paramodel-tck, paramodel-mock
-           ▲
-           │
-  tier 1: paramodel algebra
-    paramodel-elements, paramodel-trials, paramodel-plan,
-    paramodel-persistence
+![Four-tier crate dependency stack: tier 1 paramodel algebra (paramodel-elements, -trials, -plan, -persistence); tier 2 paramodel consumers (executor, compiler, tck, mock); tier 3 hyperplane reusables (core, dockerdefs, persistence, protocol, elements-ec2); tier 4 applications (controller, webconsole, cli). Dependencies flow strictly upward.](diagrams/SRD-0002/dependency-layering.png)
 
-  dependencies flow strictly upward — tier 1 never depends on tier 2+.
-  hyperplane tier only depends on paramodel tier; reverse is forbidden
-  (INV-STATE-PARAMODEL-FIRST, SRD-0101).
-```
+Dependencies flow strictly upward — tier 1 never depends on tier 2+.
+Hyperplane tier only depends on paramodel tier; reverse is forbidden
+(`INV-STATE-PARAMODEL-FIRST`, SRD-0101).
 
 ## 5. Proposed workspace layout (crate inventory)
 

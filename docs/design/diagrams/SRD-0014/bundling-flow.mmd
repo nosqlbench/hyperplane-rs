@@ -1,0 +1,37 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    subgraph Paramodel ["paramodel (this SRD)"]
+        direction TB
+        Trait["ElementKind&lt;Ctx&gt; trait"]
+        Entry["ElementKindEntry&lt;Ctx&gt; wrapper"]
+        Loader["KindRegistry&lt;Ctx&gt; loader"]
+        Adapt1["ElementTypeDescriptorRegistry<br/>(SRD-0007 adapter)"]
+        Adapt2["ElementRuntimeRegistry<br/>(SRD-0007 adapter)"]
+        Loader --> Adapt1
+        Loader --> Adapt2
+    end
+
+    subgraph Adopter ["Adopter crate (hyperplane-elements-ec2)"]
+        direction TB
+        K1["EC2NodeKind"]
+        K2["AgentKind"]
+        K3["ServiceDockerKind"]
+        K4["CommandDockerKind"]
+    end
+
+    K1 -- "inventory::submit!" --> Entry
+    K2 -- "inventory::submit!" --> Entry
+    K3 -- "inventory::submit!" --> Entry
+    K4 -- "inventory::submit!" --> Entry
+    Entry -. "walked at startup" .-> Loader
+
+    K1 -. "implements" .-> Trait
+    K2 -. "implements" .-> Trait
+    K3 -. "implements" .-> Trait
+    K4 -. "implements" .-> Trait
+
+    classDef paramodel fill:#e8f0ff,stroke:#3366aa
+    classDef adopter fill:#fff4e0,stroke:#aa7733
+    class Trait,Entry,Loader,Adapt1,Adapt2 paramodel
+    class K1,K2,K3,K4 adopter

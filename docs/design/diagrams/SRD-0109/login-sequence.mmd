@@ -1,0 +1,19 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+sequenceDiagram
+    autonumber
+    participant U as user
+    participant CLI
+    participant C as controller
+
+    U->>CLI: hyper login
+    CLI->>U: prompt username + password
+    U->>CLI: credentials
+    CLI->>C: POST /api/v1/auth/login
+    Note over C: validate credentials and mint bearer token
+    C-->>CLI: token + expiry + scopes
+    Note over CLI: write credentials file (mode 0600) in XDG config dir
+    CLI-->>U: logged in
+
+    Note over CLI,C: subsequent calls attach Authorization Bearer token
+    Note over CLI,C: on 401 TokenExpired TTY prompts re-login, non-TTY exits 2

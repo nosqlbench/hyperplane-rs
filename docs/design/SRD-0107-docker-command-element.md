@@ -73,47 +73,16 @@ specifies only where Command diverges.
 
 ## Command lifecycle at a glance
 
-```
-  paramodel step sequence for a CommandDocker element:
+![Paramodel step sequence for a CommandDocker element: Deploy (docker pull + run foreground with stdout/stderr teed to files) → Await (read exit_code; 0 → ok, non-zero → Failed) → SaveOutput (result_parameters → TrialMetrics).](diagrams/SRD-0107/command-lifecycle.png)
 
-  Deploy ──▶ Await ──▶ SaveOutput
-    │          │          │
-    │          │          └─▶ result_parameters → TrialMetrics
-    │          │
-    │          └─▶ read exit_code (0 → ok, non-zero → Failed)
-    │
-    └─▶ docker pull + docker run (foreground; agent attached)
-            │
-            └─▶ stdout/stderr teed to files in output volume
-                                        │
-                                        ▼
-                            ┌────────────────────────┐
-                            │  /hyperplane/out/      │  (inside container)
-                            │  ├── stdout.log        │  always
-                            │  ├── stderr.log        │  always
-                            │  ├── result_parameters │  if @result declared
-                            │  │   .json            │
-                            │  └── <any files>      │  uploaded as artifacts
-                            └────────────────────────┘
-                                        │
-                                        ▼
-                            paramodel ArtifactStore
-```
+Output volume contents (conventional files under `/hyperplane/out/`
+inside the container): `stdout.log`, `stderr.log`,
+`result_parameters.json` (if `@result` declared), plus any files
+the command writes — all uploaded as paramodel artifacts.
 
 ## Output contract at a glance
 
-```
-  Container writes → agent captures → paramodel stores
-  ────────────────   ────────────────   ─────────────────
-
-  stdout (stream)  ─▶ tee to stdout.log ─▶ artifact (appendable)
-                      live LogChunk ─▶ event stream
-  stderr (stream)  ─▶ tee to stderr.log ─▶ artifact
-                      live LogChunk ─▶ event stream
-  files in vol     ─▶ read on exit ─▶ artifacts (one each)
-  result_params    ─▶ parse on exit ─▶ TrialMetrics via ResultStore
-  exit code        ─▶ capture on exit ─▶ StepOutcome
-```
+![File-oriented output contract: container writes stdout, stderr, arbitrary files, a result_parameters.json, and an exit code. Agent tees streams to stdout.log and stderr.log with live LogChunks, reads arbitrary files on exit, parses result_parameters on exit, and captures the exit code. Paramodel stores each as an artifact, TrialMetric, or StepOutcome respectively; live chunks also go to the event stream.](diagrams/SRD-0107/output-contract.png)
 
 The interface is file-oriented end to end — stdout is a file
 too, just one that happens to be streamable live.
@@ -302,36 +271,7 @@ control. A non-heartbeating command doesn't get killed; only
 
 ## D7 — Timeout + cancellation
 
-```
-  Stop triggers converge on one path:
-
-  element.timeout expires ─┐
-                           │
-  plan trial_timeout ──────┤─── stop-and-capture
-                           │
-  executor cancel ─────────┤
-                           │
-  dematerialize called ────┘
-                              ▼
-                    ┌───────────────────┐
-                    │  SIGTERM          │  (grace 10s)
-                    └─────────┬─────────┘
-                              │
-                    ┌─────────▼─────────┐
-                    │  SIGKILL if alive │
-                    └─────────┬─────────┘
-                              │
-                    ┌─────────▼──────────┐
-                    │  capture files     │  (partial results are valid)
-                    │  upload artifacts  │
-                    └─────────┬──────────┘
-                              │
-                    ┌─────────▼─────────┐
-                    │  StepOutcome =    │
-                    │    Failed{TimedOut}│  (for timeout path)
-                    │    Cancelled      │  (for cancel path)
-                    └───────────────────┘
-```
+![Four stop triggers (element timeout, plan trial_timeout, executor cancel, dematerialize) converge on one stop-and-capture path: SIGTERM with 10s grace, SIGKILL if still alive, then capture files and upload artifacts (partial results are valid). StepOutcome is Failed{TimedOut} for timeout triggers or Cancelled for cancel triggers.](diagrams/SRD-0107/stop-convergence.png)
 
 
 **Timeout.** The element's `timeout` parameter bounds the

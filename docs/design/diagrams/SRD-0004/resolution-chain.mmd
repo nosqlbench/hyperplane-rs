@@ -1,0 +1,18 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    V{{"parameter lookup"}}
+    V --> A["axis binding for this trial"]
+    A -- "hit" --> OK1["bound value"]
+    A -- "miss" --> C["element Configuration entry"]
+    C -- "hit" --> OK2["bound value"]
+    C -- "miss" --> PD["parameter default"]
+    PD -- "hit" --> OK3["bound value"]
+    PD -- "miss" --> REQ{{"required?"}}
+    REQ -- "yes" --> ERR["compile error:<br/>RequiredParamUnbound"]
+    REQ -- "no" --> NULL["unbound / null-typed"]
+
+    classDef ok fill:#e8ffe8,stroke:#338833
+    classDef err fill:#ffe8e8,stroke:#aa3333
+    class OK1,OK2,OK3,NULL ok
+    class ERR err

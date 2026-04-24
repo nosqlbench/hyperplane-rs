@@ -82,31 +82,7 @@ the typed context they need.
 
 ## Concepts at a glance
 
-```
-                    ┌─────────────────────────────────────┐
-                    │   paramodel (this SRD)              │
-                    │                                     │
-                    │   ElementKind<Ctx> ← trait          │
-                    │   ElementKindEntry<Ctx> ← wrapper   │
-                    │   KindRegistry<Ctx> ← loader        │
-                    │                                     │
-                    │   adapts to paramodel's SRD-0007:   │
-                    │   ElementTypeDescriptorRegistry     │
-                    │   ElementRuntimeRegistry            │
-                    └─────────────────────────────────────┘
-                                    ↑
-                            implements + submits
-                                    │
-                    ┌───────────────┴────────────────┐
-                    │   Adopter crate (e.g.          │
-                    │   hyperplane-elements-ec2)     │
-                    │                                │
-                    │   EC2NodeKind ┐                │
-                    │   AgentKind ──┼── inventory::  │
-                    │   ServiceDockerKind ─ submit!  │
-                    │   CommandDockerKind ┘          │
-                    └────────────────────────────────┘
-```
+![Element-kind bundling flow: paramodel defines ElementKind<Ctx>, ElementKindEntry wrapper, and KindRegistry loader, which adapt to the two SRD-0007 registries. Adopter crates (hyperplane-elements-ec2 here) implement the trait and call inventory::submit! for each kind (EC2Node, Agent, ServiceDocker, CommandDocker). At startup paramodel walks the inventory and builds the registries.](diagrams/SRD-0014/bundling-flow.png)
 
 Each kind bundles three declarations — descriptor, shutdown
 semantics, runtime builder — and registers at compile time.

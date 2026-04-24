@@ -72,37 +72,12 @@ This SRD specifies runtime behaviour behind that shape.
 
 ## Deploy sequence at a glance
 
-```
-Executor      Controller          Agent              Docker daemon
-   │              │                 │                     │
-   │── Deploy ───▶                  │                     │
-   │              │                 │                     │
-   │              │─ resolve digest │                     │
-   │              │─ build spec     │                     │
-   │              │                 │                     │
-   │              │── EnsureContainerRunning ──▶          │
-   │              │                 │                     │
-   │              │                 │── docker pull ─────▶│
-   │              │                 │◀─── image ready ────│
-   │              │                 │                     │
-   │              │                 │── docker run -d ───▶│
-   │              │                 │◀── container_id ────│
-   │              │                 │                     │
-   │              │                 │── start log tail ──▶│
-   │              │                 │◀── stdout chunks ───│
-   │              │◀─── LogChunk ───│                     │
-   │              │                 │                     │
-   │              │                 │◀── health event ────│
-   │              │◀─ EventPush ────│ (healthy)           │
-   │              │                 │                     │
-   │              │◀─ CommandResponse: ok                 │
-   │              │                 │                     │
-   │◀─ materialize outputs ─────────                     │
-```
+![ServiceDocker deploy sequence: Executor fires Deploy against the Controller; Controller resolves image digest, builds a spec, and sends EnsureContainerRunning to the Agent; Agent docker-pulls, docker-run -d, starts a log tail, streams LogChunks back, reports healthy via EventPush, and returns CommandResponse ok; Controller returns materialization outputs to the Executor.](diagrams/SRD-0106/deploy-sequence.png)
 
 Runtime labels applied at `docker run --label ...`:
-`hyperplane_user`, `.study`, `.trial`, `.execution`,
-`.element`, `.instance`. Container name follows SRD-0106 D9
+`hyperplane_user`, `hyperplane_study`, `hyperplane_trial`,
+`hyperplane_execution`, `hyperplane_element`,
+`hyperplane_instance`. Container name follows SRD-0106 D9
 pattern.
 
 ## D1 — Parameter schema
@@ -239,21 +214,7 @@ in `resolved_ports`.
 
 ## D5 — Health-check semantics
 
-```
-  Resolution priority (first wins):
-
-    element.healthcheck_override          ← plan author's explicit override
-         │
-         └── else: image HEALTHCHECK      ← Dockerfile-declared default
-              │
-              └── else: no health polling ← container "healthy" when "running"
-
-  materialize gate:
-    healthy reached → materialize returns outputs
-    timeout exceeded → materialize fails (container left running for inspection)
-    opt-out: healthcheck_override=null AND image has no HEALTHCHECK
-             → materialize unblocks at "running"
-```
+![Healthcheck resolution priority and materialize gate: if the element has a healthcheck_override, it wins; else if the image has HEALTHCHECK, use that; else there is no health polling and the container is deemed healthy as soon as it is running. Polling reports health_status; materialize returns outputs on healthy, or fails with HealthCheckTimeout (container left running for inspection).](diagrams/SRD-0106/healthcheck-resolution.png)
 
 
 Two sources of health-check configuration, in priority order:

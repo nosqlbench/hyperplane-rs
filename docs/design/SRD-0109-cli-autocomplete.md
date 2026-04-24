@@ -69,40 +69,7 @@ falls out of both being thin clients of the same contract.
 
 ## Completion architecture at a glance
 
-```
-  User types: hyper execution show <TAB>
-       │
-       ▼
-  ┌──────────────┐
-  │    shell     │   bash / zsh / fish / pwsh
-  └──────┬───────┘
-         │ shell completion hook (per-shell shim, installed once)
-         ▼
-  ┌──────────────┐
-  │    hyper     │   same binary, internal subcommand
-  │  __complete  │
-  └──────┬───────┘
-         │ veks-completion: parse the partial command line
-         │                 → identify the completion point
-         │                 → which data source?
-         ▼
-  ┌────────────────────────────────────────────────┐
-  │   Completion source dispatch                   │
-  │                                                │
-  │   static ──▶ compiled-in list                  │
-  │   file ────▶ filesystem                        │
-  │   live ────▶ GET controller API                │
-  │              │                                 │
-  │              ├── success ──▶ refresh cache     │
-  │              │               return live       │
-  │              │                                 │
-  │              └── fail ─────▶ fall back to cache│
-  │                              (stale if older)  │
-  └──────┬─────────────────────────────────────────┘
-         │
-         ▼
-  completions back to shell → rendered to user
-```
+![Completion architecture: user TAB triggers the shell completion hook which invokes hyper __complete. veks-completion parses the partial command line, identifies the completion point, and dispatches by source — static lists, filesystem, or live GET to the controller API. Live requests refresh the observation cache on success or fall back to the cache on failure. Completions return to the shell for display.](diagrams/SRD-0109/completion-architecture.png)
 
 Observation cache at
 `$XDG_CACHE_HOME/hyperplane/{server}/completion.json`. Exempt
@@ -230,29 +197,8 @@ runs inside the stack being supervised).
 
 ## D3 — Auth flow
 
-```
-  hyper login:
+![hyper login sequence: user runs hyper login, CLI prompts for credentials, posts /api/v1/auth/login, controller validates and mints a bearer token, CLI writes credentials file at mode 0600 in XDG config, user sees "logged in". Subsequent calls attach Authorization: Bearer &lt;token&gt;; 401 TokenExpired prompts re-login on a TTY or exits 2 otherwise.](diagrams/SRD-0109/login-sequence.png)
 
-  user                CLI                       controller
-   │                   │                             │
-   │─ hyper login ───▶ │                             │
-   │                   │── prompt username+password  │
-   │◀── prompt ────────│                             │
-   │── credentials ──▶ │                             │
-   │                   │── POST /api/v1/auth/login ─▶│
-   │                   │                             │── validate
-   │                   │                             │── mint bearer token
-   │                   │◀── token + expiry + scopes ─│
-   │                   │                             │
-   │                   │── write credentials file    │
-   │                   │   (mode 0600 in XDG config) │
-   │                   │                             │
-   │◀── "logged in" ───│                             │
-
-  subsequent calls:
-  CLI reads credentials file → attaches Authorization: Bearer <token>
-  401 TokenExpired → if TTY, prompt re-login inline; if not, exit 2
-```
 
 
 

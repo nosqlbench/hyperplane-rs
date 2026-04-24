@@ -1,0 +1,35 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    subgraph T4 ["tier 4: applications"]
+        CTRL["hyperplane-controller"]
+        WEB["hyperplane-webconsole"]
+        CLI["hyperplane-cli"]
+    end
+    subgraph T3 ["tier 3: hyperplane-specific reusables"]
+        CORE["hyperplane-core<br/>hyperplane-dockerdefs<br/>hyperplane-persistence"]
+        PROTO["hyperplane-protocol<br/>hyperplane-elements-ec2"]
+    end
+    subgraph T2 ["tier 2: paramodel consumers"]
+        EXEC["paramodel-executor<br/>paramodel-compiler"]
+        TCK["paramodel-tck<br/>paramodel-mock"]
+    end
+    subgraph T1 ["tier 1: paramodel algebra"]
+        ELEM["paramodel-elements<br/>paramodel-trials<br/>paramodel-plan"]
+        PERS["paramodel-persistence"]
+    end
+
+    T4 --> T3
+    T4 --> T2
+    T3 --> T2
+    T3 --> T1
+    T2 --> T1
+
+    classDef t1 fill:#e8ffe8,stroke:#338833
+    classDef t2 fill:#fff4e0,stroke:#aa7733
+    classDef t3 fill:#e8f0ff,stroke:#3366aa
+    classDef t4 fill:#ffe8ff,stroke:#883388
+    class ELEM,PERS t1
+    class EXEC,TCK t2
+    class CORE,PROTO t3
+    class CTRL,WEB,CLI t4

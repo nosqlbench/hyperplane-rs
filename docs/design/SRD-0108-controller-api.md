@@ -70,27 +70,7 @@ from.
 
 ## Auth tiers at a glance
 
-```
-                                      Controller
-  ┌───────────┐                     ┌───────────────────────┐
-  │   CLI     │ ─ Bearer <token> ──▶│ /api/v1/*             │
-  │   SDK     │ ─ Bearer <token> ──▶│   (end-user           │
-  └───────────┘                     │    principal)         │
-                                    │                       │
-  ┌───────────┐     Bearer + X-On-  │                       │
-  │ Web       │ ── Behalf-Of ──────▶│   (impersonated       │
-  │ server    │                     │    end-user)          │
-  └───────────┘                     │                       │
-                                    │                       │
-  ┌───────────┐                     │                       │
-  │  Agent    │ ─ auth-token ──────▶│ /agent/ws             │
-  │           │   (WebSocket        │   (agent principal)   │
-  │           │    handshake)       │                       │
-  └───────────┘                     └───────────────────────┘
-
-  INV-API-SINGLE-CRED: exactly one credential per request
-  INV-PRINCIPAL-AT-BOUNDARY: resolved principal before any handler
-```
+![Three auth tiers against the Controller: CLI and SDK present Bearer &lt;token&gt; as the end-user principal on /api/v1/*; Web server presents Bearer &lt;system-api-key&gt; + X-On-Behalf-Of to impersonate an end-user; Agent presents auth-token on the WebSocket handshake at /agent/ws as the agent principal. INV-API-SINGLE-CRED and INV-PRINCIPAL-AT-BOUNDARY apply across the board.](diagrams/SRD-0108/auth-tiers.png)
 
 ## Endpoint taxonomy at a glance
 
@@ -381,28 +361,7 @@ with `since=<seq>` resume without gaps.
 they saw as `since`. The controller replays any events with
 higher `seq` from its retention window, then switches to live.
 
-```
-  Subscribe + replay:
-
-  client ──▶ WS /api/v1/events/subscribe
-    │
-    │── send { since: 104700, filters: {...} }
-    │
-    │◀── event seq=104701          ┐
-    │◀── event seq=104702          │  replay (from retention)
-    │◀── ...                       │
-    │◀── event seq=104836          ┘
-    │
-    │◀── event seq=104837          ┐
-    │◀── event seq=104838          │  live
-    │◀── ...                       ┘
-
-  edge cases:
-    since absent    → start "now"  (INV-EVENT-DEFAULT-NOW)
-    since evicted   → error SinceOutOfRetention (4010)
-                      client falls back to fresh "now" sub
-                      + reconciles via GET endpoints
-```
+![Event-stream subscribe + replay sequence: client opens the WebSocket, sends a subscribe frame with since and filters; controller replays events from retention up to the current cursor, then streams live events as they arrive. Edge cases: since absent starts "now"; since evicted returns SinceOutOfRetention (4010).](diagrams/SRD-0108/subscribe-replay.png)
 
 
 **Retention.** Policy owned by SRD-0111. If a `since` references

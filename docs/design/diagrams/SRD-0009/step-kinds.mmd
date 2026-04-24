@@ -1,0 +1,12 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    AS["AtomicStep (enum)"]
+    AS --> DEP["Deploy<br/>bring an element up<br/>service: start<br/>command: pull+run"]
+    AS --> AW["Await<br/>block on a<br/>command's exit"]
+    AS --> SO["SaveOutput<br/>persist a command's<br/>result into Metrics"]
+    AS --> TD["Teardown<br/>bring a service down<br/>stop + remove"]
+    AS --> BAR["Barrier<br/>synchronisation point<br/>(used by Rule 5)"]
+
+    classDef step fill:#e8f0ff,stroke:#3366aa
+    class DEP,AW,SO,TD,BAR step

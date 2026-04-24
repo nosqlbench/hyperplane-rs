@@ -1,0 +1,18 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    subgraph systemd ["systemd"]
+        CTRL["hyperplane-controller.service<br/>Restart=always<br/>reads controller.toml"]
+        WEB["hyperplane-web.service<br/>Restart=always<br/>reads web.toml +<br/>credentials/system-api-key"]
+        REG["hyperplane-registry.service (optional)<br/>Restart=on-failure"]
+    end
+
+    START["hyper system start<br/>orchestrates start-order<br/>(controller → web → registry)<br/>health-waits between each"]
+    START --> CTRL
+    START --> WEB
+    START --> REG
+
+    classDef unit fill:#e8f0ff,stroke:#3366aa
+    classDef cmd fill:#fff4e0,stroke:#aa7733
+    class CTRL,WEB,REG unit
+    class START cmd

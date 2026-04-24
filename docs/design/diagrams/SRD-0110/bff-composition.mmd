@@ -1,0 +1,24 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+sequenceDiagram
+    autonumber
+    participant B as Browser
+    participant W as Web server
+    participant C as Controller
+
+    B->>W: GET /nodes/{id}
+
+    rect rgb(240, 232, 255)
+        Note over W,C: fan-out in parallel<br/>(one system API key + X-On-Behalf-Of)
+        W->>C: GET /api/v1/nodes/{id}
+        W->>C: GET /api/v1/agents/{id}
+        W->>C: GET /api/v1/nodes/{id}/containers
+        W->>C: GET /api/v1/events?subject=node:...
+        C-->>W: node data
+        C-->>W: agent data
+        C-->>W: container list
+        C-->>W: recent events
+    end
+
+    Note over W: maud templates compose<br/>responses into HTML fragment
+    W-->>B: rendered page (one round-trip)

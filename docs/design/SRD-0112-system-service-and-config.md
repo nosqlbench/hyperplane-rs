@@ -56,41 +56,11 @@ that machine; end-users interact via CLI / web UI.
 
 ## Process topology at a glance
 
-```
-                 ┌─────────────── systemd ───────────────┐
-                 │                                       │
-                 │  hyperplane-controller.service        │
-                 │   ├── Restart=always                  │
-                 │   └── reads /etc/hyperplane/controller.toml │
-                 │                                       │
-                 │  hyperplane-web.service               │
-                 │   ├── Restart=always                  │
-                 │   ├── reads web.toml                  │
-                 │   └── reads credentials/system-api-key │
-                 │                                       │
-                 │  hyperplane-registry.service (opt.)   │
-                 │   └── Restart=on-failure              │
-                 │                                       │
-                 └─────────────────┬─────────────────────┘
-                                   │
-                          `hyper system start`
-                          orchestrates start-order
-                          (controller → web → registry)
-                          and health-waits between each.
-```
+![systemd-supervised process topology: three unit files — hyperplane-controller.service (Restart=always), hyperplane-web.service (Restart=always, needs system API key), and optional hyperplane-registry.service (Restart=on-failure). `hyper system start` orchestrates the start-order controller → web → registry with health-waits between each.](diagrams/SRD-0112/process-topology.png)
 
 ## Start / stop ordering
 
-```
-  start:                                stop (reverse):
-    1. migrations run                     1. stop registry
-    2. start controller                   2. stop web (drain 30s)
-    3. wait /api/v1/health                3. stop controller (drain 30s)
-    4. start web                          4. SYSTEM_STOPPED event
-    5. wait web health
-    6. start registry (if co-resident)
-    7. SYSTEM_STARTED event
-```
+![Start sequence: migrations run, controller start, wait for /api/v1/health, web start, wait for web health, registry start if co-resident, SYSTEM_STARTED event. Stop sequence in reverse: stop registry, stop web with 30s drain, stop controller with 30s drain, SYSTEM_STOPPED event.](diagrams/SRD-0112/start-stop-ordering.png)
 
 ## D1 — Config directory layout
 
@@ -370,42 +340,7 @@ to be running the client.
 
 ## D7 — `hyper system init` bootstrap
 
-```
-  First-run initialisation:
-
-  ┌────────────────────────────────────────┐
-  │ 1. create data directory               │
-  └────────────────────────────────────────┘
-                   │
-  ┌────────────────▼───────────────────────┐
-  │ 2. run migrations to current version   │
-  │    (paramodel-store first, then        │
-  │     hyperplane-store; consistency chk) │
-  └────────────────┬───────────────────────┘
-                   │
-  ┌────────────────▼───────────────────────┐
-  │ 3. mint system API key                 │
-  │    → credentials/system-api-key (0600) │
-  └────────────────┬───────────────────────┘
-                   │
-  ┌────────────────▼───────────────────────┐
-  │ 4. prompt for initial admin user       │
-  │    → username + password in users tbl  │
-  └────────────────┬───────────────────────┘
-                   │
-  ┌────────────────▼───────────────────────┐
-  │ 5. mint bootstrap admin token (24h)    │
-  │    → print to stdout for `hyper login` │
-  └────────────────┬───────────────────────┘
-                   │
-  ┌────────────────▼───────────────────────┐
-  │ 6. emit SYSTEM_INITIALIZED event       │
-  │    exit 0                              │
-  └────────────────────────────────────────┘
-
-  Re-running on an initialised install → AlreadyInitialized
-  (destructive re-init requires deleting the data directory first)
-```
+![hyper system init flow: 1. create data directory; 2. run migrations (paramodel-store first, then hyperplane-store, with consistency check); 3. mint system API key at credentials/system-api-key (0600); 4. prompt for initial admin user (username + password); 5. mint bootstrap admin token (24h expiry) and print to stdout; 6. emit SYSTEM_INITIALIZED event and exit 0. Re-running on an initialised install fails AlreadyInitialized; destructive re-init requires deleting the data directory first.](diagrams/SRD-0112/bootstrap-init.png)
 
 
 

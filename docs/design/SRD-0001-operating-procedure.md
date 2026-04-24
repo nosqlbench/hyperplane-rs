@@ -73,24 +73,10 @@ git history is where the conversation lives.
 
 ## SRD lifecycle at a glance
 
-```
-              ┌──────────────┐
-    idea ────▶│   Draft      │  open >> threads; exploratory spikes ok
-              └──────┬───────┘
-                     │  discuss, revise, resolve >> threads
-                     ▼
-              ┌──────────────┐
-              │  Accepted    │  code follows; referenced by later SRDs
-              └──────┬───────┘
-                     │  material change needed
-                     ▼
-              ┌──────────────┐
-              │  Superseded  │  new SRD written; old kept for history
-              └──────────────┘
+![SRD lifecycle: Draft (open threads, exploratory spikes allowed) → Accepted (code follows, referenced by later SRDs) → Superseded (new SRD written, old kept for history).](diagrams/SRD-0001/srd-lifecycle.png)
 
-  small clarifications → edit in place + brief note at bottom
-  git history is authoritative
-```
+Small clarifications edit in place with a brief note at the bottom;
+git history is authoritative either way.
 
 ## Draft vs accepted
 

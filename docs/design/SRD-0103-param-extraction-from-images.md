@@ -56,41 +56,7 @@ a registered image.
 
 ## Extraction pipeline at a glance
 
-```
-  user names image                        validation request
-    │                                              │
-    ▼                                              ▼
-┌─────────────┐                           ┌─────────────────┐
-│   image     │                           │  bindings +     │
-│   ref       │                           │  image ref      │
-└──────┬──────┘                           └─────────┬───────┘
-       │                                            │
-       ▼                                            │
-   tag? ───yes──▶ registry HEAD ──▶ digest          │
-       │                                │           │
-       │ already digest                 │           │
-       └─────────┬──────────────────────┘           │
-                 ▼                                  ▼
-        ┌────────────────────┐          ┌──────────────────┐
-        │  images table      │          │ apply defaults   │
-        │  (keyed by digest) │          │ → resolved binds │
-        └────────┬───────────┘          └────────┬─────────┘
-              hit │  miss                        │
-                  │    │                         ▼
-                  │    ▼                 ┌───────────────┐
-                  │  pull manifest       │ domain check  │
-                  │  parse @param        │ pattern check │
-                  │  infer ENV defaults  │ valueSource   │
-                  │  build ParamSpace    │ verify        │
-                  │  insert + cache      └───────┬───────┘
-                  ▼                              │
-        ┌────────────────────┐                   ▼
-        │   ParamSpace       │            ┌───────────────┐
-        │   (returned)       │            │   resolved    │
-        └────────────────────┘            │   binding     │
-                                          │   (returned)  │
-                                          └───────────────┘
-```
+![Image param-extraction and validation pipelines: the left pipeline resolves an image reference to a digest (via registry HEAD if a tag), hits the images table cache keyed by digest, and on miss pulls the manifest, parses @param annotations, infers ENV defaults, builds a ParamSpace, and caches; the right pipeline takes bindings and an image ref, applies defaults, and runs domain/pattern/valueSource checks to return a resolved binding.](diagrams/SRD-0103/extraction-pipeline.png)
 
 **Left path**: `POST /api/v1/images/{spec}/paramspace` — pure
 function of the digest; cache safe because deterministic.

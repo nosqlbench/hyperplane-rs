@@ -1,0 +1,16 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart LR
+    A["Element A<br/>Plug"]
+    B["Element B<br/>Socket"]
+    A -- "name match?<br/>plug.accepts ⊇ socket.provides?<br/>relationship_type ∈ allowed?" --> W{{"all three pass?"}}
+    B --> W
+    W -- yes --> WIRE["Wire<br/>(edge in element graph)"]
+    W -- no --> REJ["compile error:<br/>PlugSocketMismatch"]
+
+    classDef elem fill:#e8f0ff,stroke:#3366aa
+    classDef ok fill:#e8ffe8,stroke:#338833
+    classDef err fill:#ffe8e8,stroke:#aa3333
+    class A,B elem
+    class WIRE ok
+    class REJ err

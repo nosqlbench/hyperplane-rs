@@ -70,85 +70,14 @@ behind that shape.
 
 ## Provisioning flow at a glance
 
-```
-Controller                           AWS EC2                Node (post-boot)          Agent
-    │                                   │                        │                      │
-    │── RunInstances ───────────────────▶                        │                      │
-    │                                   │ spin up                │                      │
-    │◀── instance-id + pending ─────────│                        │                      │
-    │                                   │                        │                      │
-    │  node row: PROVISIONING           │                        │                      │
-    │                                   │                        │                      │
-    │── DescribeInstances (5s poll) ───▶│                        │                      │
-    │◀── running ───────────────────────│                        │                      │
-    │                                   │                        │                      │
-    │  PROVISIONED                      │                   cloud-init                  │
-    │                                                        starts                     │
-    │◀───────── Vector: cloud-init logs WebSocket ───────────│                          │
-    │                                                                                   │
-    │  CONFIGURING → CONFIGURED                                                         │
-    │                                                                                   │
-    │─── SSH: scp agent, write config, enable systemd unit ────▶                       │
-    │                                                                                   │
-    │  DEPLOYING → DEPLOYED                                                             │
-    │                                                                         systemd   │
-    │                                                                         starts    │
-    │◀───────────────── WebSocket open + Register ──────────────────────────────────────│
-    │                                                                                   │
-    │  REGISTERING → REGISTERED → (first heartbeat) → ACTIVE_HEARTBEAT                  │
-    │                                                                                   │
-    │  materialize returns outputs (instance_id, public_ip, ...)                        │
-```
+![EC2Node provisioning sequence: Controller calls AWS RunInstances; polls DescribeInstances every 5s until running (PROVISIONED); Vector on the node streams cloud-init logs over a WebSocket (CONFIGURING → CONFIGURED); Controller opens SSH to scp the agent, write config, and enable the systemd unit (DEPLOYING → DEPLOYED); agent starts, opens a WebSocket, and Registers (REGISTERING → REGISTERED → ACTIVE_HEARTBEAT on first heartbeat); materialize returns outputs.](diagrams/SRD-0104/provisioning-flow.png)
 
 ## Node state machine at a glance
 
-```
-         ┌──────────────┐
-         │ PROVISIONING │──────────────┐
-         └──────┬───────┘              │
-                ▼                      │
-         ┌──────────────┐              │
-         │  CONFIGURING │───┐          │
-         └──────┬───────┘   │          │
-                ▼           ▼          │
-         ┌──────────────┐  (failed)    │
-         │ CONFIGURED   │              │
-         └──────┬───────┘              │
-                ▼                      │
-         ┌──────────────┐              │
-         │  DEPLOYING   │───┐          │
-         └──────┬───────┘   │          │
-                ▼           ▼          │
-         ┌──────────────┐  (failed)    │
-         │  DEPLOYED    │              │
-         └──────┬───────┘              │
-                ▼                      │
-         ┌──────────────┐              │
-         │  REGISTERING │───┐          │
-         └──────┬───────┘   │          │
-                ▼           ▼          │
-         ┌──────────────┐  (failed)    │
-         │  REGISTERED  │              │
-         └──────┬───────┘              │
-                ▼                      │
-       ┌────────┴────────┐             │
-       │ ACTIVE_HEARTBEAT│             │
-       └──┬─────┬────────┘             │
-          │     │                      │
-          │     └─ (30s silence) ─┐    │
-          │                       ▼    │
-          │            ┌──────────────┐│
-          │            │ LOST_HEART-  ││
-          │            │ BEAT (retry) ││
-          │            └──────────────┘│
-          ▼                            ▼
-         ┌──────────────────────────────────┐
-         │          TERMINATED              │
-         └──────────────────────────────────┘
-```
+![Node state machine: PROVISIONING → PROVISIONED → CONFIGURING → CONFIGURED → DEPLOYING → DEPLOYED → REGISTERING → REGISTERED → ACTIVE_HEARTBEAT ↔ AWAITING_HEARTBEAT; any stage may transition to a *_FAILED retry state or to TERMINATED; LOST_HEARTBEAT recovers to REGISTERING on reconnect or ACTIVE_HEARTBEAT on heartbeat.](diagrams/SRD-0104/node-state-machine.png)
 
-Every transition emits `NODE_STATUS_CHANGED`. Retry arrows
-omitted for clarity; full set in D7.
+Every transition emits `NODE_STATUS_CHANGED`. Full transition set
+in D7.
 
 ## D1 — Parameter schema
 

@@ -93,22 +93,12 @@ Key observations from the source beyond the docs:
 
 ## Parameter algebra at a glance
 
-```
-  Parameter (enum)
-  │
-  ├── Integer   ── IntegerDomain   + IntConstraint[]   + default: i64
-  ├── Double    ── DoubleDomain    + DoubleConstraint[]+ default: f64
-  ├── Boolean   ── BooleanDomain                       + default: bool
-  ├── String    ── StringDomain    + StringConstraint[]+ default: String
-  ├── Selection ── SelectionDomain                     + default: String
-  └── Derived   ── expression bound to other parameters
+![Parameter enum with six variants: Integer, Double, Boolean, String, Selection, Derived. Each non-Derived carries a domain, constraints, and a default alongside its intrinsic labels and organisational tags.](diagrams/SRD-0004/parameter-algebra.png)
 
-  every non-Derived carries: name, domain, constraints, default,
-                             Labels (intrinsic), Tags (organisational)
+Validation at a value check: in-domain → passes constraints → ok.
+Resolution at a parameter lookup:
 
-  validation:  value → in domain? → passes constraints? → ok
-  resolution:  axis binding > element config > parameter default
-```
+![Value resolution chain: axis binding > element configuration entry > parameter default > (required → compile error | not required → unbound).](diagrams/SRD-0004/resolution-chain.png)
 
 ## Design
 

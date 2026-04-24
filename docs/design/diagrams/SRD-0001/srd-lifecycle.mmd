@@ -1,0 +1,16 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+stateDiagram-v2
+    direction LR
+    [*] --> Draft : idea
+    Draft --> Accepted : discuss,\nresolve >> threads
+    Accepted --> Superseded : material change\nneeded; new SRD written
+    note right of Draft
+        open >> threads ok
+        exploratory spikes ok
+        code should not yet follow
+    end note
+    note right of Accepted
+        code follows
+        referenced by later SRDs
+    end note

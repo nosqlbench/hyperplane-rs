@@ -1,0 +1,19 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+sequenceDiagram
+    autonumber
+    participant B as browser
+    participant W as web server
+    participant C as controller
+
+    B->>W: login (username + password)
+    W->>C: POST /api/v1/auth/login
+    C-->>W: user_id + scopes
+    W-->>B: session cookie
+
+    B->>W: GET /nodes
+    Note over W,C: request carries Authorization Bearer system-api-key AND X-On-Behalf-Of user
+    W->>C: GET /api/v1/nodes
+    Note over C: handler runs with effective_principal = user
+    C-->>W: response (user-scoped)
+    W-->>B: HTML (composed)

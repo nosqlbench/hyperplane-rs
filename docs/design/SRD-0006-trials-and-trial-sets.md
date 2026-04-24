@@ -116,28 +116,11 @@ Observations from the source that shape this SRD:
 
 ## Trial model at a glance
 
-```
-  TestPlan authoring                    Compiler (SRD-0010)
-       │                                     │
-       │ axes: 2 dims × 3 values             │ mixed-radix enumeration
-       │ (e.g. dataset ∈ {small, med, big}   │ + binding-state
-       │  concurrency ∈ {1, 10})             │
-       │                                     ▼
-       └────────────▶ 6 trials (2 × 3 cartesian)
-                      ┌──────────────────────────┐
-                      │ Trial { id, assignments, │
-                      │         labels, tags }   │
-                      └──────────────────────────┘
+![Trial enumeration: TestPlan with two axes (dataset with three values, concurrency with two) compiles through mixed-radix enumeration into a TrialSet of six Trials. Each Trial has a two-level Assignments map: element_name → parameter_name → Value.](diagrams/SRD-0006/trial-enumeration.png)
 
-  Assignments: element_name → parameter_name → Value
-      client.dataset     = "small"
-      client.concurrency = 1
-      harness.version    = "1.0"    (not on an axis; config)
-
-  TrialSet collects all trials for one execution. Paramodel
-  preserves identity across: authoring (expected set), execution
-  (running set), results (completed set).
-```
+TrialSet collects all trials for one execution. Paramodel preserves
+identity across: authoring (expected set), execution (running set),
+results (completed set).
 
 ## Design
 

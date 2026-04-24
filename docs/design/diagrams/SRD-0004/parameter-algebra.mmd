@@ -1,0 +1,22 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    P["Parameter (enum)"]
+    P --> I["Integer<br/>IntegerDomain<br/>+ IntConstraint[]<br/>default: i64"]
+    P --> D["Double<br/>DoubleDomain<br/>+ DoubleConstraint[]<br/>default: f64"]
+    P --> B["Boolean<br/>BooleanDomain<br/>default: bool"]
+    P --> S["String<br/>StringDomain<br/>+ StringConstraint[]<br/>default: String"]
+    P --> SE["Selection<br/>SelectionDomain<br/>default: String"]
+    P --> DR["Derived<br/>expression bound to<br/>other parameters"]
+
+    Shared["every non-Derived carries:<br/>name, domain, constraints, default,<br/>Labels (intrinsic), Tags (organisational)"]
+    I -.-> Shared
+    D -.-> Shared
+    B -.-> Shared
+    S -.-> Shared
+    SE -.-> Shared
+
+    classDef param fill:#e8f0ff,stroke:#3366aa
+    classDef shared fill:#fff4e0,stroke:#aa7733
+    class P param
+    class Shared shared

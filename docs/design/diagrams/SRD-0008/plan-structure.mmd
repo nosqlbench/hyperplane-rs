@@ -1,0 +1,13 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    TP["TestPlan<br/>name, id, metadata"]
+    TP --> E["elements: Vec&lt;Element&gt;<br/>(copies from Element Graph)"]
+    TP --> AX["axes: Vec&lt;Axis&gt;<br/>parameter sweeps"]
+    TP --> POL["trial_policies<br/>trial_timeout,<br/>retry, ordering"]
+
+    E --> EC["each element has parameters<br/>with Configuration (defaults)"]
+    AX --> AD["Axis { name,<br/>target: (ElementName, ParameterName),<br/>values: Vec&lt;Value&gt; }"]
+
+    classDef plan fill:#e8f0ff,stroke:#3366aa
+    class TP plan

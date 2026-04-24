@@ -91,34 +91,7 @@ Observations:
 
 ## TCK structure at a glance
 
-```
-  paramodel-tck  (opt-in crate; hidden behind a cargo feature)
-  │
-  ├── ImplementationProvider family
-  │   ParameterProvider, ElementProvider, TrialProvider,
-  │   PlanProvider, ExecutorProvider, StorageProvider
-  │   (one per domain; adopters compose what they need)
-  │
-  ├── Conformance cases
-  │   │   parameterised over the ImplementationProvider
-  │   │
-  │   ├── trait-level cases     (per trait: round-trip, errors, edge)
-  │   ├── invariant cases       (every INV-* code has a case)
-  │   └── scenario cases        (end-to-end multi-trait exercises)
-  │
-  └── Harness
-      wires an adopter's provider into the case battery
-      produces a pass/fail report per case per invariant
-
-  paramodel-mock (opt-in sibling)
-  │
-  └── in-memory reference implementations of every trait
-      (not a conformance target; a baseline fixture for TCK + docs)
-
-  adopters: hyperplane-store-sqlite, future backends
-  each adopter runs the TCK against their impl via their
-  own ImplementationProvider
-```
+![TCK structure: paramodel-tck crate exposes an ImplementationProvider family (parameter, element, trial, plan, executor, storage providers) and three case batteries (trait-level, invariant, scenario). The Harness wires an adopter's provider into the case battery. paramodel-mock is a sibling crate with in-memory reference implementations used as a baseline fixture. Adopters like hyperplane-store-sqlite implement ImplementationProvider and run the full case battery.](diagrams/SRD-0013/tck-structure.png)
 
 ## Design
 

@@ -68,68 +68,15 @@ checks, not implementors of them.
 
 ## Authorization model at a glance
 
-```
-  principal        ──┐
-  (end-user/       ──┤
-  agent/system)    ──┘
-        │
-        ▼
-  ┌───────────────┐       ┌──────────────┐
-  │ active roles  │  AND  │ token scopes │     both must permit
-  │ (viewer/user/ │       │ (fine-grain  │        for access
-  │  admin)       │       │  capability) │
-  └───────────────┘       └──────────────┘
-        │                        │
-        └────────┬───────────────┘
-                 ▼
-        ┌──────────────┐
-        │  per-request │        then visibility check:
-        │  authz gate  │        ownership / workspace /
-        └──────┬───────┘        resource_shares / public
-               │
-               ▼
-         access decision
-```
+![Authorization model: principal (end-user, agent, or system) carries active roles (viewer/user/admin) AND token scopes (fine-grain capabilities); both must permit access at the per-request authz gate, followed by a visibility check over ownership/workspace/resource_shares/public.](diagrams/SRD-0114/authz-model.png)
 
 ## Impersonation at a glance
 
-```
-  browser            web server                controller
-     │                   │                          │
-     │── login ─────────▶│                          │
-     │                   │── POST /api/v1/auth/login ─▶
-     │                   │◀── user_id + scopes ─────│
-     │◀── session cookie │                          │
-     │                   │                          │
-     │── GET /nodes ────▶│                          │
-     │                   │── GET /api/v1/nodes ────▶│
-     │                   │   Authorization:         │
-     │                   │     Bearer <system-key>  │
-     │                   │   X-On-Behalf-Of: <user> │
-     │                   │                          │
-     │                   │       controller runs    │
-     │                   │       handler with       │
-     │                   │       effective_principal│
-     │                   │       = <user>           │
-     │                   │                          │
-     │                   │◀── response (user-scoped)│
-     │◀── HTML (composed)│                          │
-```
+![Impersonation sequence: browser logs in via the web server, which POSTs /api/v1/auth/login to the controller and receives user_id + scopes, then mints a session cookie. Subsequent browser request (GET /nodes) is proxied by the web server to /api/v1/nodes with Authorization: Bearer <system-api-key> and X-On-Behalf-Of: <user>. Controller runs the handler with effective_principal = <user> and returns a user-scoped response; web server composes HTML and returns.](diagrams/SRD-0114/impersonation.png)
 
 ## Resource visibility resolution
 
-```
-  For each resource request, check in order:
-
-    1. Principal is owner?      ──▶ allowed
-    2. Resource is public?      ──▶ allowed (read only, unless shared)
-    3. Explicit resource_share  ──▶ allowed (with share's permission)
-       - to this principal?
-       - to one of this principal's groups?
-       - to this principal's active workspace?
-    4. Admin role active?       ──▶ allowed
-    5. No match                 ──▶ denied (silent or 404, by context)
-```
+![Ordered visibility checks for a resource request: (1) principal is owner → allowed; (2) resource is public → allowed (read only unless shared); (3) explicit resource_share to this principal, a group, or active workspace → allowed with share's permission; (4) admin role active → allowed; (5) otherwise denied (silent or 404 by context).](diagrams/SRD-0114/visibility-resolution.png)
 
 ## D1 — Principal kinds
 

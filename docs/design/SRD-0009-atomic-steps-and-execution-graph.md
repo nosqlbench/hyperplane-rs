@@ -110,26 +110,13 @@ Key shape observations:
 
 ## Step kinds at a glance
 
-```
-  AtomicStep (enum) — leaves of the execution graph
+AtomicStep is the leaf of the execution graph — a five-variant enum:
 
-  ┌─ Deploy   ── bring an element up (service: start; command: pull+run)
-  ├─ Await    ── block on a command's exit
-  ├─ SaveOutput ─ persist a command's result into Metrics
-  ├─ Teardown ── bring a service down (stop + remove)
-  └─ Barrier  ── synchronisation point (used by Rule 5)
+![AtomicStep enum: Deploy (bring an element up), Await (block on a command's exit), SaveOutput (persist result to Metrics), Teardown (stop a service), Barrier (synchronisation point).](diagrams/SRD-0009/step-kinds.png)
 
-  per-trial sequence for a service+command pair:
+Per-trial sequence for a service + command pair:
 
-    Deploy(harness) ──▶ Deploy(client) ──▶ Await(client) ──▶ SaveOutput(client)
-                                                                    │
-                                                                    ▼
-                                                        Teardown(harness)
-
-  shutdown_semantics (SRD-0007) selects which tail reducto emits:
-    Service → Deploy + Teardown
-    Command → Deploy + Await + SaveOutput
-```
+![Per-trial step sequence: Deploy(harness service) → Deploy(client command) → Await(client) → SaveOutput(client) → Teardown(harness). shutdown_semantics selects which tail reducto emits — Service yields Deploy+Teardown, Command yields Deploy+Await+SaveOutput.](diagrams/SRD-0009/per-trial-sequence.png)
 
 ## Design
 

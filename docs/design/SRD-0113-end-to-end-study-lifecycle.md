@@ -66,70 +66,11 @@ Every other hyperplane SRD. This one's the capstone.
 
 ## Golden path at a glance
 
-```
-  Phase 1 — authoring
-  ───────────────────
-  author → `hyper image register` → extract @param → cache ParamSpace
-  author → write plan.yaml
-  author → `hyper plan validate`  → paramodel compile (labels, plugs, shutdown_semantics)
-  author → `hyper plan submit`    → persist PlanSpec
-
-  Phase 2 — execution start
-  ────────────────────────
-  author → `hyper execution start` → compile Atomic Step graph → EXECUTION_STARTED
-
-  Phase 3 — provisioning
-  ──────────────────────
-  executor → Deploy(host)      → EC2Node.materialize → RunInstances → node rows march state machine
-  executor → Deploy(host-agent) → SSH deploy once → systemd up → WebSocket opens → Register
-                                                                → REGISTERED → ACTIVE_HEARTBEAT
-
-  Phase 4 — workload
-  ──────────────────
-  executor → Deploy(harness) → ServiceDocker → EnsureContainerRunning → docker pull + run
-                                             → healthcheck gate → materialize returns
-  executor → Deploy(client)  → CommandDocker → RunCommand → docker run foreground
-  executor → Await(client)   → block on exit → agent captures payload
-                                             → artifacts uploaded, result_parameters parsed
-
-  Phase 5 — teardown
-  ──────────────────
-  executor → SaveOutput(client) → TrialMetrics via ResultStore
-  executor → Teardown(harness)  → EnsureContainerAbsent
-  executor → Teardown(host)     → Shutdown to agent → OS shutdown → AWS terminates
-                                                   → node row: TERMINATED
-
-  Phase 6 — query
-  ───────────────
-  consumer → `hyper execution show` / web UI /executions/{id}
-  consumer → query results + artifacts + events
-```
+![Golden-path study lifecycle in six phases: (1) authoring — register image, write plan, validate, submit; (2) execution start — compile Atomic Step Graph, EXECUTION_STARTED; (3) provisioning — Deploy host (EC2Node materialize, RunInstances), Deploy host-agent (SSH deploy once, WebSocket opens, Register); (4) workload — Deploy harness (ServiceDocker with healthcheck gate), Deploy client (CommandDocker), Await client exit; (5) teardown — SaveOutput, Teardown harness, Teardown host (Shutdown, AWS terminates); (6) query — inspect via CLI or web UI.](diagrams/SRD-0113/golden-path.png)
 
 ## Subsystem coupling at a glance
 
-```
-     ┌──────────────────── one execution ────────────────────┐
-     │                                                       │
-     │  paramodel state machine  ←─── drives ───             │
-     │                                                       │
-     │  hyperplane node lifecycle  (SRD-0104)                │
-     │  hyperplane agent lifecycle (SRD-0105)                │
-     │  hyperplane container state (SRD-0106 / 0107)         │
-     │                                                       │
-     │  ALL emit events to → hyperplane event stream (0111)  │
-     │                                                       │
-     │  END-USER observes via:                               │
-     │   • CLI (0109) — tail events, query results           │
-     │   • Web UI (0110) — topology + execution detail       │
-     │   • SDK (0108) — programmatic queries                 │
-     │                                                       │
-     │  AUTHZ gates everything:                              │
-     │   • principal (0114) — who is making requests?        │
-     │   • token scope — what may they do?                   │
-     │   • resource_shares — what may they see?              │
-     │                                                       │
-     └───────────────────────────────────────────────────────┘
-```
+![Subsystem coupling within one execution: paramodel state machine drives three hyperplane subsystems — node lifecycle (SRD-0104), agent lifecycle (SRD-0105), container state (SRD-0106/0107). All three emit events to the unified event stream (SRD-0111). End-users observe via CLI (tail + query), Web UI (topology + execution detail), or SDK (programmatic). Authz gates everything via principal (SRD-0114), token scope, and resource_shares.](diagrams/SRD-0113/subsystem-coupling.png)
 
 ## D1 — Actors
 

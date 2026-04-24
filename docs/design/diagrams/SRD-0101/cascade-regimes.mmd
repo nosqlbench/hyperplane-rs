@@ -1,0 +1,21 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    subgraph Soft ["soft-delete (default)"]
+        S["Row marked deleted, retained for audit.<br/>• nodes (after TERMINATED)<br/>• users (after deactivation)<br/>• plans, executions (audit-journal FK)<br/>• image registrations (digest history)<br/><br/>Queries filter unless include_deleted=true."]
+    end
+
+    subgraph Hard ["hard-delete + cascade (transient children)"]
+        H["On parent delete, children gone.<br/>• node → agents, deployments<br/>• image → image_tag_cache<br/>• workspace → workspace_members<br/><br/>Admin scope resource:delete:hard required."]
+    end
+
+    subgraph Never ["never-deleted (immutable history)"]
+        N["Append-only; retention is window-based.<br/>• journal_events (paramodel)<br/>• system_events<br/>• audit_events (typically indefinite)<br/><br/>Eviction preserves INV-EVENT-IMMUTABLE."]
+    end
+
+    classDef soft fill:#e8f0ff,stroke:#3366aa
+    classDef hard fill:#ffe8e8,stroke:#aa3333
+    classDef never fill:#e8ffe8,stroke:#338833
+    class S soft
+    class H hard
+    class N never

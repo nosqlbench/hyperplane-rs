@@ -73,38 +73,7 @@ as a generalisation of these types.
 
 ## First-party kinds at a glance
 
-```
-             ┌─────────────────────────────┐
-             │   EC2Node                    │
-             │   shutdown_semantics=Service │
-             │                              │
-             │              ◯ hosts         │  (socket)
-             └──────────────┬───────────────┘
-                            │
-                            │ (Dedicated)
-                            │
-             ┌──────────────▼───────────────┐
-             │   Agent                      │
-             │   shutdown_semantics=Service │
-             │                              │
-             │   ● deploys-onto             │  (plug)
-             │              ◯ commands-on   │  (socket)
-             └──────────────┬───────────────┘
-                            │
-                 ┌──────────┴──────────┐
-                 │                     │
-  ┌──────────────▼─────────┐  ┌───────▼──────────────────┐
-  │  ServiceDocker         │  │  CommandDocker           │
-  │  shutdown_semantics=   │  │  shutdown_semantics=     │
-  │  Service               │  │  Command                 │
-  │                        │  │                          │
-  │  ● commands-on         │  │  ● commands-on           │
-  │  ◯ depends-on-service  │◀─┤  ● depends-on-service    │
-  └────────────────────────┘  │    (optional, Linear)    │
-                              └──────────────────────────┘
-
-  legend:  ◯ socket (offered)      ● plug (consumed)
-```
+![First-party element wiring: EC2Node offers a hosts socket; Agent plugs into it via Dedicated relationship and offers a commands-on socket; ServiceDocker and CommandDocker each plug into Agent's commands-on via Dedicated; CommandDocker optionally plugs into ServiceDocker's depends-on-service via Linear relationship.](diagrams/SRD-0102/kinds-wiring.png)
 
 **What the wiring means:**
 

@@ -119,40 +119,12 @@ Shape observations:
 
 ## Execution model at a glance
 
-```
-  ExecutionPlan (from compiler)
-         │
-         ▼
-  ┌────────────────────────────────────────────────────────┐
-  │   Executor                                             │
-  │                                                        │
-  │   ┌────────────┐    ┌────────────┐    ┌────────────┐  │
-  │   │ Scheduler  │───▶│  Runtime   │───▶│ Observer   │  │
-  │   │ picks next │    │ invokes    │    │ emits      │  │
-  │   │ ready step │    │ ElementRT  │    │ Journal    │  │
-  │   └─────┬──────┘    │ hooks      │    │ events     │  │
-  │         │           └─────┬──────┘    └────────────┘  │
-  │         │                 │                            │
-  │         │                 ▼                            │
-  │         │      ┌──────────────────┐                    │
-  │         │      │ ElementRuntime   │── implementations  │
-  │         │      │ (per Kind)       │   live in hyperplane
-  │         │      └──────────────────┘                    │
-  │         │                                              │
-  │         ▼                                              │
-  │   ┌─────────────────┐                                  │
-  │   │ Checkpoint      │── persists progress for resume   │
-  │   │ Store (SRD-0012)│                                  │
-  │   └─────────────────┘                                  │
-  └────────────────────────────────────────────────────────┘
-         │
-         ▼
-  ExecutionResults (trials + outcomes + metrics)
-```
+![Execution model: the Executor takes an ExecutionPlan and composes a Scheduler (picks next ready step), a Runtime (invokes ElementRuntime hooks), and an Observer (emits journal events). Runtime dispatches to per-Kind ElementRuntime implementations that live in hyperplane. The Executor also writes to CheckpointStore for resume and produces ExecutionResults at the end.](diagrams/SRD-0011/executor-model.png)
 
 Scheduler + Runtime are separate concerns:
- - Scheduler answers "which step next?" (topological + resource-aware)
- - Runtime answers "how to run this step?" (via ElementRuntime trait)
+
+- **Scheduler** answers "which step next?" (topological + resource-aware).
+- **Runtime** answers "how to run this step?" (via ElementRuntime trait).
 
 The `Observer` tees every transition into the journal stream that
 downstream systems (hyperplane's event stream, SRD-0111) subscribe to.

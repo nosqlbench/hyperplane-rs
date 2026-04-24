@@ -1,0 +1,25 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    EP["ExecutionPlan<br/>(from compiler)"]
+    EP --> EX
+    subgraph EX ["Executor"]
+        direction TB
+        SCHED["Scheduler<br/>picks next ready step<br/>topological + resource-aware"]
+        RT["Runtime<br/>invokes ElementRuntime hooks"]
+        OBS["Observer<br/>emits journal events"]
+        SCHED --> RT --> OBS
+    end
+    RT --> ER["ElementRuntime<br/>(per Kind)<br/>implementations live in hyperplane"]
+    OBS --> JS["Journal / Event stream"]
+    EX --> CP["CheckpointStore<br/>(SRD-0012)<br/>persists progress for resume"]
+    EX --> ERES["ExecutionResults<br/>trials + outcomes + metrics"]
+
+    classDef plan fill:#e8f0ff,stroke:#3366aa
+    classDef comp fill:#fff4e0,stroke:#aa7733
+    classDef store fill:#f0f0f0,stroke:#666
+    classDef out fill:#e8ffe8,stroke:#338833
+    class EP plan
+    class SCHED,RT,OBS comp
+    class CP,JS store
+    class ERES out

@@ -106,35 +106,10 @@ Shape observations that drive the Rust design:
 
 ## Plan structure at a glance
 
-```
-  TestPlan
-  │
-  ├── name, id, metadata
-  │
-  ├── elements: Vec<Element>      ← copies from Element Graph (SRD-0007)
-  │   │
-  │   └── each has parameters with Configuration (element-level defaults)
-  │
-  ├── axes: Vec<Axis>              ← parameter sweeps
-  │   │
-  │   └── Axis { name, target: (ElementName, ParameterName), values: Vec<Value> }
-  │
-  └── trial_policies: trial_timeout, retry, ordering
+![TestPlan structure: a TestPlan holds metadata, a copy of the elements from the Element Graph, axes for parameter sweeps, and trial policies like trial_timeout, retry, and ordering.](diagrams/SRD-0008/plan-structure.png)
 
-
-  value resolution chain (first wins):
-
-    axis binding for this trial
-         │
-         ▼ else
-    element Configuration entry
-         │
-         ▼ else
-    parameter default
-         │
-         ▼ else
-    parameter required + unbound → compile error
-```
+Value resolution per trial is covered by the chain in SRD-0004:
+axis binding > element configuration > parameter default > (required → error).
 
 ## Design
 

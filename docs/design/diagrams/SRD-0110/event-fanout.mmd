@@ -1,0 +1,31 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    CTRL["Controller event stream<br/>(one WebSocket upstream)"]
+
+    subgraph Web ["Web server"]
+        Fanout["fanout bus"]
+        Buffer["rolling in-memory buffer<br/>(N=200 per scope)"]
+    end
+
+    B1["browser 1"]
+    B2["browser 2"]
+    B3["browser 3"]
+
+    CTRL --> Fanout
+    Fanout <--> Buffer
+    Fanout -- "per-browser SSE<br/>(filtered by principal,<br/>SRD-0114 D10)" --> B1
+    Fanout --> B2
+    Fanout --> B3
+
+    Note["INV-WEB-EVENT-FANOUT-UPSTREAM-ONE:<br/>at most one upstream subscription<br/>per scope-family"]
+    CTRL -.-> Note
+
+    classDef ctrl fill:#e8f0ff,stroke:#3366aa
+    classDef web fill:#fff4e0,stroke:#aa7733
+    classDef client fill:#e8ffe8,stroke:#338833
+    classDef inv fill:#f0f0f0,stroke:#666
+    class CTRL ctrl
+    class Fanout,Buffer web
+    class B1,B2,B3 client
+    class Note inv

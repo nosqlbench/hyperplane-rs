@@ -1,0 +1,27 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    subgraph Extract ["POST /api/v1/images/{spec}/paramspace"]
+        direction TB
+        I1["image ref"] --> Q1{{"tag?"}}
+        Q1 -- "tag" --> H1["registry HEAD"] --> D1["digest"]
+        Q1 -- "already digest" --> D1
+        D1 --> CC1["images table<br/>(keyed by digest)"]
+        CC1 -- "hit" --> PS1["ParamSpace<br/>(returned)"]
+        CC1 -- "miss" --> PULL["pull manifest<br/>parse @param<br/>infer ENV defaults<br/>build ParamSpace<br/>insert + cache"]
+        PULL --> PS1
+    end
+
+    subgraph Validate ["POST /api/v1/images/{spec}/validate-params"]
+        direction TB
+        I2["bindings + image ref"] --> RES["apply defaults<br/>→ resolved binds"]
+        RES --> DC["domain check<br/>pattern check<br/>valueSource verify"]
+        DC --> RB["resolved binding<br/>(returned)"]
+    end
+
+    classDef endpoint fill:#e8f0ff,stroke:#3366aa
+    classDef store fill:#fff4e0,stroke:#aa7733
+    classDef result fill:#e8ffe8,stroke:#338833
+    class I1,I2 endpoint
+    class CC1 store
+    class PS1,RB result

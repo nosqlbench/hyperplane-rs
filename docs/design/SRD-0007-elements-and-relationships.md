@@ -109,38 +109,11 @@ Shape observations that drive the Rust design:
 
 ## The three graphs at a glance
 
-```
-  1. Element Graph (authored)
-  ─────────────────────────────
-                                      user writes this in the TestPlan
-     ┌──────┐                          nodes  = Element structs
-     │ host │◀──┐                      edges  = Dependency records
-     └──────┘   │ Dedicated            relationships = RelationshipType enum
-                │                      axes attach here
-          ┌─────┴────┐
-          │ harness  │◀──┐
-          └──────────┘   │ Linear
-                         │
-                  ┌──────┴──┐
-                  │ client  │
-                  └─────────┘
+![Three graphs: (1) Element Graph, authored by the user in the TestPlan with Element nodes and RelationshipType edges; (2) Element Instance Graph, derived by the compiler Stage 1 via mixed-radix axis expansion and instance coalescing; (3) Atomic Step Graph, derived by the compiler Stage 2 emitting Deploy/Await/SaveOutput/Teardown/Barrier steps — what the executor runs.](diagrams/SRD-0007/three-graphs.png)
 
-  2. Element Instance Graph (compiler Stage 1)
-  ───────────────────────────────────────────
-  reducto expands axes + binding-state + Dedicated propagation
-  + Lifeline collapse. Nodes = element instances (one per unique
-  bound parameter set). Edges = instance-to-instance.
-
-  3. Atomic Step Graph (compiler Stage 2, SRD-0009)
-  ────────────────────────────────────────────────
-  reducto emits Deploy / Await / SaveOutput / Teardown / Barrier
-  steps per instance. This is what the executor runs.
-
-  invariants:
-    authored graph ─ user-editable
-    instance graph ─ derived; visualised in UIs for inspection
-    atomic graph   ── what actually executes
-```
+Invariants: the authored graph is user-editable; the instance graph
+is derived and surfaces in UIs for inspection; the atomic graph is
+what actually executes.
 
 ## Design
 

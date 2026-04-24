@@ -1,0 +1,16 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    IN["Input: TestPlan + Element Graph<br/>(SRD-0007 / SRD-0008)"]
+    S1["Stage One — Trial enumeration + binding state<br/>mixed-radix over axes → Vec&lt;Trial&gt;<br/>compute binding-state per element per trial<br/>output: Element Instance Graph"]
+    S2["Stage Two — Naive graph seeding<br/>emit naive step sequence per element instance<br/>(Deploy / Await / SaveOutput / Teardown per<br/>shutdown_semantics)"]
+    S3["Stage Three — The 8 reducto rules<br/>R1 lifecycle expansion   R5 serialization barriers<br/>R2 relationship projection R6 lifeline collapse<br/>R3 group coalescing       R7 trial barriers<br/>R4 dedicated propagation   R8 trial-element mark"]
+    S4["Stage Four — Graph linearisation<br/>topological orderings,<br/>metadata stamping"]
+    OUT["ExecutionPlan<br/>(Atomic Step Graph;<br/>input to the executor — SRD-0011)"]
+
+    IN --> S1 --> S2 --> S3 --> S4 --> OUT
+
+    classDef io fill:#e8f0ff,stroke:#3366aa
+    classDef stage fill:#fff4e0,stroke:#aa7733
+    class IN,OUT io
+    class S1,S2,S3,S4 stage

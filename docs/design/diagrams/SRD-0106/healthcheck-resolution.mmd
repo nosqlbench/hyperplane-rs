@@ -1,0 +1,22 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    Start{{"container started"}}
+    Start --> Q1{{"element has<br/>healthcheck_override?"}}
+    Q1 -- yes --> Use1["use override<br/>(takes precedence)"]
+    Q1 -- no --> Q2{{"image has HEALTHCHECK?"}}
+    Q2 -- yes --> Use2["use image directive"]
+    Q2 -- no --> None["no health polling<br/>(healthy == running)"]
+
+    Use1 --> Poll["agent polls, reports health_status"]
+    Use2 --> Poll
+    Poll --> Done{{"healthy reached?"}}
+    Done -- yes --> OK["materialize returns outputs"]
+    Done -- "no (timeout)" --> TO["materialize fails<br/>HealthCheckTimeout<br/>container left running<br/>for inspection"]
+
+    None --> Running["materialize unblocks<br/>at 'running'"]
+
+    classDef ok fill:#e8ffe8,stroke:#338833
+    classDef err fill:#ffe8e8,stroke:#aa3333
+    class OK,Running ok
+    class TO err

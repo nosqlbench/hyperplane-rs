@@ -69,51 +69,11 @@ the asset pipeline, and the accessibility baseline.
 
 ## BFF composition at a glance
 
-```
-  Browser: GET /nodes/{id}
-       │
-       ▼
-  ┌──────────────────┐
-  │   Web server     │
-  │   (one request)  │
-  └──────┬───────────┘
-         │ fan-out (parallel, one system API key, one impersonation header)
-         ├─── GET /api/v1/nodes/{id} ──────────────┐
-         ├─── GET /api/v1/agents/{id} ─────────────┤
-         ├─── GET /api/v1/nodes/{id}/containers ───┤
-         └─── GET /api/v1/events?subject=node:...─┤
-                                                  ▼
-                                       ┌───────────────┐
-                                       │  Controller   │
-                                       └───────────────┘
-         │
-         ▼ maud templates compose responses into HTML
-  ┌──────────────────┐
-  │  rendered page   │
-  └──────────────────┘
-       │
-       ▼
-  back to browser (one round-trip)
-```
+![BFF composition sequence: browser sends GET /nodes/{id}; web server fans out in parallel (under one system API key + X-On-Behalf-Of) to GET /api/v1/nodes/{id}, /agents/{id}, /nodes/{id}/containers, /events?subject=node:... ; controller returns four payloads; web server composes via maud templates into a single HTML fragment; browser gets one rendered page in one round-trip.](diagrams/SRD-0110/bff-composition.png)
 
 ## Event fanout at a glance
 
-```
-  Controller event stream (one WebSocket)
-       │
-       ▼
-  ┌────────────────────────┐
-  │   Web server           │
-  │   fanout bus           │◀── rolling in-memory buffer (N=200/scope)
-  └────┬───────┬───────┬───┘
-       │       │       │
-       │       │       │  per-browser SSE (filtered by principal per SRD-0114 D10)
-       ▼       ▼       ▼
-   browser  browser  browser
-```
-
-One upstream subscription per scope-family; many browser SSE
-subscribers share it (`INV-WEB-EVENT-FANOUT-UPSTREAM-ONE`).
+![Event fanout: a single WebSocket upstream from controller feeds the web server's fanout bus (with a rolling in-memory buffer of ~200 events per scope). Multiple browsers each receive per-browser SSE streams filtered by principal. INV-WEB-EVENT-FANOUT-UPSTREAM-ONE: at most one upstream subscription per scope-family.](diagrams/SRD-0110/event-fanout.png)
 
 ## D1 — Process model
 
@@ -234,33 +194,8 @@ fragment, swapped into the target element.
 
 ## D4 — htmx swap strategies
 
-```
-  Three cadences, one transport-family:
+![Three swap cadences: full-page swap (link navigation, hx-boost, server returns full page); panel swap on-demand (user action via hx-get, server returns HTML fragment); live swap push-driven (hx-ext='sse' with sse-connect + sse-swap, server pushes fragments over SSE, with hx-trigger='every Ns' as polling fallback and hx-ext='ws' deferred). Convention: every live-swap target has a stable id matching the server's SSE event name.](diagrams/SRD-0110/swap-cadences.png)
 
-  ┌─ full-page swap ────────────────────────────────────┐
-  │   trigger: link navigation                          │
-  │   hx-boost="true" on links                          │
-  │   server returns complete page                      │
-  └─────────────────────────────────────────────────────┘
-
-  ┌─ panel swap (on-demand) ────────────────────────────┐
-  │   trigger: user action (refresh, filter, expand)    │
-  │   hx-get="/path/to/panel"                           │
-  │   server returns HTML fragment (partial)            │
-  └─────────────────────────────────────────────────────┘
-
-  ┌─ live swap (push-driven) ───────────────────────────┐
-  │   trigger: backend state change                     │
-  │   hx-ext="sse" + sse-connect + sse-swap=<name>      │
-  │   server pushes HTML fragments over SSE             │
-  │                                                     │
-  │   fallback: hx-trigger="every Ns" for slow panels   │
-  │   deferred: hx-ext="ws" for bidirectional (not v1)  │
-  └─────────────────────────────────────────────────────┘
-
-  Convention: every live-swap target has a stable id matching
-              the server's SSE event name
-```
 
 
 

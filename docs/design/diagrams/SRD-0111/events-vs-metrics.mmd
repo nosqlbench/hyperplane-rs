@@ -1,0 +1,23 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    subgraph Events ["Events (discrete, every one persisted)"]
+        AG1["agent"]
+        WS1["WebSocket"]
+        C1["controller"]
+        ES["EventStore<br/>(SRD-0012 trait)"]
+        SUB["subscribe APIs"]
+        AG1 --> WS1 --> C1 --> ES --> SUB
+    end
+
+    subgraph Metrics ["Metrics (time-series, sampled)"]
+        AG2["agent vmagent"]
+        VM["VictoriaMetrics<br/>(metrics backend, external)"]
+        Q["PromQL queries"]
+        AG2 --> VM --> Q
+    end
+
+    classDef ev fill:#e8f0ff,stroke:#3366aa
+    classDef me fill:#fff4e0,stroke:#aa7733
+    class AG1,WS1,C1,ES,SUB ev
+    class AG2,VM,Q me

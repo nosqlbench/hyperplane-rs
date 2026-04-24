@@ -1,0 +1,18 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart LR
+    DH["Deploy(harness)<br/>Service"]
+    DC["Deploy(client)<br/>Command"]
+    AC["Await(client)"]
+    SC["SaveOutput(client)"]
+    TH["Teardown(harness)"]
+
+    DH --> DC --> AC --> SC --> TH
+
+    Note["shutdown_semantics (SRD-0007) selects tails:<br/>Service → Deploy + Teardown<br/>Command → Deploy + Await + SaveOutput"]
+    SC -.-> Note
+
+    classDef svc fill:#e8f0ff,stroke:#3366aa
+    classDef cmd fill:#fff4e0,stroke:#aa7733
+    class DH,TH svc
+    class DC,AC,SC cmd

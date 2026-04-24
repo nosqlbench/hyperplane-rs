@@ -1,0 +1,23 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    TP["TestPlan<br/>axes: 2 dims × 3 values<br/>dataset ∈ {small, med, big}<br/>concurrency ∈ {1, 10}"]
+    C["Compiler (SRD-0010)<br/>mixed-radix enumeration<br/>+ binding-state"]
+    TS["TrialSet (6 trials)"]
+    T1["Trial #1<br/>dataset=small<br/>concurrency=1"]
+    T2["Trial #2<br/>dataset=small<br/>concurrency=10"]
+    T3["Trial #3<br/>dataset=med<br/>concurrency=1"]
+    T4["Trial #4 ..."]
+    TP --> C --> TS
+    TS --> T1
+    TS --> T2
+    TS --> T3
+    TS --> T4
+
+    A["Assignments:<br/>element_name → parameter_name → Value<br/>(two-level map)"]
+    T1 -.-> A
+
+    classDef plan fill:#e8f0ff,stroke:#3366aa
+    classDef trial fill:#fff4e0,stroke:#aa7733
+    class TP,C plan
+    class T1,T2,T3,T4 trial

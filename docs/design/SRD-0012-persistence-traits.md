@@ -95,37 +95,12 @@ Observations that shape the Rust design:
 
 ## Trait surface at a glance
 
-```
-  paramodel-persistence crate exposes six traits:
+![Six persistence traits exposed by the paramodel-persistence crate: MetadataStore (studies, plans, elements, parameters); ExecutionRepository (live execution state); CheckpointStore (resume progress); JournalStore (monotonic event log); ResultStore (trial outcomes + metrics); ArtifactStore (captured blobs). All six map to the hyperplane-store-sqlite implementation (single file, WAL mode, per-trait modules).](diagrams/SRD-0012/persistence-traits.png)
 
-  ┌────────────────────────────────────────────────────────────────┐
-  │                                                                │
-  │   MetadataStore     ─── studies, plans, elements, parameters   │
-  │                         (slowly-changing, authored content)    │
-  │                                                                │
-  │   ExecutionRepository ── live execution state snapshot         │
-  │                         (one row per active execution)         │
-  │                                                                │
-  │   CheckpointStore   ─── execution progress for resume          │
-  │                         (paused/interrupted → replay)          │
-  │                                                                │
-  │   JournalStore      ─── monotonic execution event log          │
-  │                         (every step transition)                │
-  │                                                                │
-  │   ResultStore       ─── trial outcomes + metric bindings       │
-  │                         (terminal state of completed trials)   │
-  │                                                                │
-  │   ArtifactStore     ─── captured blobs: logs, outputs, dumps   │
-  │                         (appendable, content-addressed)        │
-  │                                                                │
-  └────────────────────────────────────────────────────────────────┘
-
-  all six traits share one physical store per deployment (SRD-0101);
-  the reference impl is paramodel-store-sqlite (single file, WAL mode)
-
-  adopters (hyperplane) implement the trait via the implementation
-  crate; adopters do not re-invent the contract
-```
+All six traits share one physical store per deployment (SRD-0101);
+the reference implementation is `paramodel-store-sqlite` (single
+file, WAL mode). Adopters (hyperplane) implement the traits via
+the implementation crate; adopters do not re-invent the contract.
 
 ## Design
 

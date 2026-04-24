@@ -73,41 +73,11 @@ event has a persistence API like any other paramodel state.
 
 ## Event flow at a glance
 
-```
-  sources                      controller                    consumers
-  ───────                      ──────────                    ─────────
-
-  ┌──────────────┐                                           ┌──────────────┐
-  │   Agent      │─── EventPush (WS) ──┐                     │  Web server  │
-  └──────────────┘                     │                     │  (SSE fanout)│
-                                       ▼                     └──────┬───────┘
-  ┌──────────────┐         ┌──────────────────┐                     │
-  │  Paramodel   │─ bridge │   Event stream   │────── subscribe ────▶ browsers
-  │  journal     │──trait──▶   (unified)      │                     
-  └──────────────┘         │                  │                     ┌──────────────┐
-                           │   persists via   │── subscribe ───────▶│     CLI      │
-  ┌──────────────┐         │   EventStore     │                     │  (tail)      │
-  │  Controller  │─ emit ──▶   trait          │                     └──────────────┘
-  │  (own acts)  │         └──────────┬───────┘
-  └──────────────┘                    │                             ┌──────────────┐
-                                      └── subscribe ────────────────▶     SDK      │
-                                                                    └──────────────┘
-```
+![Event flow: three sources (Agent via EventPush over WebSocket, Paramodel journal via JournalSubscriber bridge, Controller own acts) feed a unified event stream in the controller that persists via the EventStore trait. Consumers — Web server (SSE fanout to browsers), CLI (tail), SDK — subscribe.](diagrams/SRD-0111/event-flow.png)
 
 ## Event vs metric transport
 
-```
-  Events (discrete, every one persisted)     Metrics (time-series, sampled)
-  ──────────────────────────────────────     ───────────────────────────────
-  agent WebSocket ──▶ controller              agent vmagent ──▶ VictoriaMetrics
-                      │                                          │
-                      ▼                                          ▼
-                   EventStore                                 metrics backend
-                   (SRD-0012 trait)                           (external)
-                      │                                          │
-                      ▼                                          ▼
-                   subscribe APIs                              PromQL queries
-```
+![Events vs metrics transports: events (discrete, every one persisted) go from agent over WebSocket to controller into EventStore and out via subscribe APIs; metrics (time-series, sampled) go from agent vmagent into VictoriaMetrics and out via PromQL.](diagrams/SRD-0111/events-vs-metrics.png)
 
 Events and metrics are separate transports by design. The
 event-sourcing posture (whole stream canonical, no sampling)
@@ -196,31 +166,7 @@ makes the ordering model visible in the schema.
 
 ## D3 — Category taxonomy
 
-```
-  Five categories — stable core set, additively extensible:
-
-  LIFECYCLE  ────── NODE_ADDED, NODE_STATUS_CHANGED,
-                    EXECUTION_STARTED, TRIAL_COMPLETED,
-                    SYSTEM_STARTED, SYSTEM_STOPPED
-
-  TOPOLOGY  ─────── AGENT_CONNECTED, AGENT_DISCONNECTED,
-                    CONTAINER_ADDED, CONTAINER_REMOVED,
-                    CONTAINER_STATUS_CHANGED
-
-  CONFIGURATION ─── CONFIG_CHANGED, IMAGE_REGISTERED,
-                    TOKEN_ROTATED, USER_CREATED
-
-  OPERATION  ────── LOG_APPENDED, METRIC_SAMPLE,
-                    RESOURCE_HEARTBEAT, STEP_PROGRESS,
-                    STEP_STARTED, STEP_COMPLETED
-
-  SECURITY  ─────── LOGIN_SUCCEEDED, LOGIN_FAILED,
-                    PERMISSION_DENIED, IMPERSONATION,
-                    TOKEN_REVOKED
-
-  Severity modulates: TRACE < DEBUG < INFO < WARN < ERROR
-  Filter composes: category ∈ {...} AND severity ≥ N
-```
+![Five event categories with sample event types: LIFECYCLE (NODE_ADDED, NODE_STATUS_CHANGED, EXECUTION_STARTED, TRIAL_COMPLETED, SYSTEM_STARTED/STOPPED); TOPOLOGY (AGENT_CONNECTED/DISCONNECTED, CONTAINER_ADDED/REMOVED/STATUS_CHANGED); CONFIGURATION (CONFIG_CHANGED, IMAGE_REGISTERED, TOKEN_ROTATED, USER_CREATED); OPERATION (LOG_APPENDED, METRIC_SAMPLE, RESOURCE_HEARTBEAT, STEP_*); SECURITY (LOGIN_*, PERMISSION_DENIED, IMPERSONATION, TOKEN_REVOKED). Severity modulates with TRACE &lt; DEBUG &lt; INFO &lt; WARN &lt; ERROR and filters compose on category plus severity threshold.](diagrams/SRD-0111/category-taxonomy.png)
 
 
 

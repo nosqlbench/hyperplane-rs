@@ -61,31 +61,7 @@ structure.
 
 ## State ownership at a glance
 
-```
-┌──────────────────── hyperplane.db (single SQLite file) ────────────────────┐
-│                                                                            │
-│  ┌─ Paramodel-owned (via SRD-0012 traits) ───────┐                         │
-│  │  studies, plans, executions, elements,        │                         │
-│  │  parameters, checkpoints, journal_events,     │                         │
-│  │  trials, trial_metrics, artifacts, ...        │                         │
-│  └────────────────┬──────────────────────────────┘                         │
-│                   │ hyperplane reads via trait                             │
-│                   ▼                                                        │
-│  ┌─ Bridge tables (hyperplane-owned FK to paramodel) ──┐                   │
-│  │  trial_deployments (trials.id ↔ container_id)       │                   │
-│  │  execution_nodes  (executions.id ↔ nodes.id)        │                   │
-│  └────────────────┬────────────────────────────────────┘                   │
-│                   │                                                        │
-│                   ▼                                                        │
-│  ┌─ Hyperplane-owned ─────────────────────────────────┐                    │
-│  │  nodes, agents, deployments, provisioning,         │                    │
-│  │  images, image_tag_cache, ssh_keys, config,        │                    │
-│  │  users, groups, roles, api_tokens, workspaces,     │                    │
-│  │  resource_shares, audit_events, system_events      │                    │
-│  └────────────────────────────────────────────────────┘                    │
-│                                                                            │
-└────────────────────────────────────────────────────────────────────────────┘
-```
+![State ownership in one SQLite file: paramodel-owned tables (studies, plans, executions, checkpoints, journal_events, trials, artifacts...) accessed by hyperplane only via SRD-0012 traits; bridge tables (trial_deployments, execution_nodes) owned by hyperplane with foreign keys into paramodel; hyperplane-owned tables (nodes, agents, deployments, images, users, roles, shares, audit, system events).](diagrams/SRD-0101/state-ownership.png)
 
 **Reading rules:**
 
@@ -205,34 +181,7 @@ rubber-stamp the shadow.
 
 ## D4 — Cascade-delete policy
 
-```
-  Three regimes:
-
-  ┌─ soft-delete (default) ──────────────────────┐
-  │  Row marked deleted, retained for audit.     │
-  │  • nodes (after TERMINATED)                  │
-  │  • users (after deactivation)                │
-  │  • plans, executions (audit-journal FK)      │
-  │  • image registrations (digest history)      │
-  │  Queries filter unless include_deleted=true. │
-  └──────────────────────────────────────────────┘
-
-  ┌─ hard-delete + cascade (transient children) ─┐
-  │  On parent delete, children gone.            │
-  │  • node → agents, deployments                │
-  │  • image → image_tag_cache                   │
-  │  • workspace → workspace_members             │
-  │  Admin scope resource:delete:hard required.  │
-  └──────────────────────────────────────────────┘
-
-  ┌─ never-deleted (immutable history) ──────────┐
-  │  Append-only; retention is window-based.     │
-  │  • journal_events (paramodel)                │
-  │  • system_events                             │
-  │  • audit_events (typically indefinite)       │
-  │  Eviction preserves INV-EVENT-IMMUTABLE.     │
-  └──────────────────────────────────────────────┘
-```
+![Three cascade regimes: soft-delete (default; rows marked deleted, retained for audit — nodes, users, plans, executions, image registrations); hard-delete with cascade (on parent delete, transient children gone — node→agents+deployments, image→image_tag_cache, workspace→workspace_members; requires admin scope); never-deleted (append-only; retention window-based — journal_events, system_events, audit_events).](diagrams/SRD-0101/cascade-regimes.png)
 
 
 Hyperplane entities follow three deletion regimes.

@@ -1,0 +1,35 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    subgraph Sources ["sources"]
+        AG["Agent"]
+        PM["Paramodel journal"]
+        CTRL["Controller<br/>(own acts)"]
+    end
+
+    subgraph Controller ["controller"]
+        ES["Event stream<br/>(unified)<br/>persists via EventStore trait"]
+    end
+
+    subgraph Consumers ["consumers"]
+        WEB["Web server<br/>(SSE fanout)"]
+        CLI["CLI (tail)"]
+        SDK["SDK"]
+    end
+
+    AG -- "EventPush (WS)" --> ES
+    PM -- "JournalSubscriber bridge" --> ES
+    CTRL -- "emit" --> ES
+
+    ES -- "subscribe" --> WEB
+    ES -- "subscribe" --> CLI
+    ES -- "subscribe" --> SDK
+
+    WEB --> Browsers["browsers"]
+
+    classDef src fill:#fff4e0,stroke:#aa7733
+    classDef ctrl fill:#e8f0ff,stroke:#3366aa
+    classDef cons fill:#e8ffe8,stroke:#338833
+    class AG,PM,CTRL src
+    class ES ctrl
+    class WEB,CLI,SDK,Browsers cons

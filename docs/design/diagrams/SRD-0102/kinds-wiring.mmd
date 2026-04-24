@@ -1,0 +1,21 @@
+%% Copyright (c) Jonathan Shook
+%% SPDX-License-Identifier: Apache-2.0
+flowchart TB
+    EC2["EC2Node<br/>shutdown_semantics=Service<br/><br/>● socket: hosts"]
+    AG["Agent<br/>shutdown_semantics=Service<br/><br/>○ plug: deploys-onto<br/>● socket: commands-on"]
+    SVC["ServiceDocker<br/>shutdown_semantics=Service<br/><br/>○ plug: commands-on<br/>● socket: depends-on-service"]
+    CMD["CommandDocker<br/>shutdown_semantics=Command<br/><br/>○ plug: commands-on<br/>○ plug: depends-on-service (optional)"]
+
+    AG -- "Dedicated" --> EC2
+    SVC -- "Dedicated" --> AG
+    CMD -- "Dedicated" --> AG
+    CMD -. "Linear (optional)" .-> SVC
+
+    classDef infra fill:#e8f0ff,stroke:#3366aa,stroke-width:2px
+    classDef agent fill:#fff4e0,stroke:#aa7733
+    classDef svc fill:#e8ffe8,stroke:#338833
+    classDef cmd fill:#ffe8ff,stroke:#aa33aa
+    class EC2 infra
+    class AG agent
+    class SVC svc
+    class CMD cmd
